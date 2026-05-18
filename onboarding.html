@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamSync - 欢迎加入</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);min-height:100vh;color:white;overflow-x:hidden}
+        .star{position:fixed;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw var(--d,3s) ease-in-out infinite;opacity:0}
+        @keyframes tw{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:.7;transform:scale(1)}}
+        .glass{background:rgba(15,23,42,.65);backdrop-filter:blur(20px);border:1px solid rgba(99,102,241,.2)}
+
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+        .float{animation:float 3s ease-in-out infinite}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        .fade-up{animation:fadeUp .6s ease forwards}
+        .fade-up-d1{animation:fadeUp .6s .1s ease forwards;opacity:0}
+        .fade-up-d2{animation:fadeUp .6s .2s ease forwards;opacity:0}
+        .fade-up-d3{animation:fadeUp .6s .3s ease forwards;opacity:0}
+        .fade-up-d4{animation:fadeUp .6s .4s ease forwards;opacity:0}
+        .fade-up-d5{animation:fadeUp .6s .5s ease forwards;opacity:0}
+
+        @keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+        .pulse{animation:pulse 2s ease-in-out infinite}
+
+        .step-line{position:absolute;left:23px;top:48px;bottom:0;width:2px;background:linear-gradient(to bottom,#6366f1,transparent)}
+
+        ::-webkit-scrollbar{width:6px}
+        ::-webkit-scrollbar-track{background:rgba(15,23,42,.5)}
+        ::-webkit-scrollbar-thumb{background:linear-gradient(#6366f1,#8b5cf6);border-radius:3px}
+    </style>
+</head>
+<body>
+<div id="stars" class="pointer-events-none"></div>
+
+<div class="min-h-screen flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-lg">
+        <!-- Logo -->
+        <div class="text-center mb-8 fade-up">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-4xl float mb-4">
+                🌙
+            </div>
+            <h1 class="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+                欢迎来到 DreamSync
+            </h1>
+            <p class="text-slate-400">开始你的梦境探索之旅</p>
+        </div>
+
+        <!-- 引导步骤 -->
+        <div class="space-y-4 mb-8">
+            <div class="glass rounded-2xl p-5 fade-up-d1 relative">
+                <div class="step-line"></div>
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xl flex-shrink-0">1</div>
+                    <div class="flex-1 pt-1">
+                        <h3 class="font-semibold mb-1">记录你的第一个梦</h3>
+                        <p class="text-sm text-slate-400">每天醒来后，花几分钟记录梦境内容。越详细越好，包括场景、人物、情绪。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-5 fade-up-d2 relative">
+                <div class="step-line"></div>
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xl flex-shrink-0">2</div>
+                    <div class="flex-1 pt-1">
+                        <h3 class="font-semibold mb-1">探索 AI 梦境分析</h3>
+                        <p class="text-sm text-slate-400">我们的 AI 会从心理学、符号学角度解读你的梦境，发现隐藏的模式。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-5 fade-up-d3 relative">
+                <div class="step-line"></div>
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-xl flex-shrink-0">3</div>
+                    <div class="flex-1 pt-1">
+                        <h3 class="font-semibold mb-1">发现梦境共鸣</h3>
+                        <p class="text-sm text-slate-400">找到与你做相似梦的人，建立连接，探索集体潜意识的奥秘。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-5 fade-up-d4">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-xl flex-shrink-0">4</div>
+                    <div class="flex-1 pt-1">
+                        <h3 class="font-semibold mb-1">加入梦境联机</h3>
+                        <p class="text-sm text-slate-400">与他人同步入睡，设置共同意图，尝试在梦中相遇。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速设置 -->
+        <div class="glass rounded-2xl p-5 mb-6 fade-up-d5">
+            <h3 class="font-semibold mb-4 text-sm">⚙️ 快速设置</h3>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium">睡前提醒</p>
+                        <p class="text-xs text-slate-400">每天提醒你记录梦境</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+                    </label>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium">提醒时间</p>
+                        <p class="text-xs text-slate-400">选择合适的时间</p>
+                    </div>
+                    <input type="time" value="22:00" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium">选择头像</p>
+                        <p class="text-xs text-slate-400">展示你的梦境形象</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-lg ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900">🌙</button>
+                        <button class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-lg hover:bg-slate-700 transition">✨</button>
+                        <button class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-lg hover:bg-slate-700 transition">🌟</button>
+                        <button class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-lg hover:bg-slate-700 transition">🦋</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 开始按钮 -->
+        <button onclick="startJourney()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 font-semibold text-lg hover:opacity-90 transition active:scale-[.98] fade-up-d5">
+            🚀 开始探索梦境
+        </button>
+
+        <p class="text-center text-xs text-slate-500 mt-4 fade-up-d5">
+            已有 <span class="text-indigo-400 font-semibold">12,847</span> 名探索者加入 DreamSync
+        </p>
+    </div>
+</div>
+
+<script>
+// 星空
+(function(){const c=document.getElementById('stars');for(let i=0;i<100;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*3}s`;c.appendChild(s)}})();
+
+function startJourney(){
+    localStorage.setItem('dreamsync-onboarded','true');
+    window.location.href='app.html?tab=journal';
+}
+</script>
+</body>
+</html>
