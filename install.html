@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamSync - 安装到手机</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);min-height:100vh;color:white}
+        .star{position:fixed;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw var(--d,3s) ease-in-out infinite;opacity:0}
+        @keyframes tw{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:.7;transform:scale(1)}}
+        
+        @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .fade-up{animation:fadeUp .6s ease forwards}
+        
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+        .pulse-slow{animation:pulse 3s ease-in-out infinite}
+        
+        .phone-frame{max-width:320px;margin:0 auto;border-radius:40px;overflow:hidden;border:8px solid #1e293b;box-shadow:0 25px 60px rgba(0,0,0,.5)}
+        .phone-screen{aspect-ratio:9/19.5;background:#0f172a;position:relative;overflow:hidden}
+        
+        .step-card{border-radius:16px;padding:16px;margin-bottom:12px;transition:all .3s}
+        .step-card:hover{transform:translateY(-2px)}
+    </style>
+</head>
+<body>
+<div id="stars"></div>
+
+<div class="max-w-lg mx-auto px-4 py-8">
+    <!-- 标题 -->
+    <div class="text-center mb-8 fade-up">
+        <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-5xl mx-auto mb-4 pulse-slow">
+            🌙
+        </div>
+        <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+            安装 DreamSync
+        </h1>
+        <p class="text-slate-400 mt-2">添加到主屏幕，像原生 APP 一样使用</p>
+    </div>
+
+    <!-- 检测设备 -->
+    <div id="device-info" class="text-center mb-6 text-sm text-slate-400 fade-up" style="animation-delay:.1s">
+        正在检测你的设备...
+    </div>
+
+    <!-- iPhone 安装指南 -->
+    <div id="ios-guide" class="fade-up" style="animation-delay:.2s">
+        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <span class="text-2xl">🍎</span> iPhone 安装
+        </h2>
+        
+        <div class="space-y-3">
+            <div class="step-card bg-slate-800/60 border border-slate-700/50">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold flex-shrink-0">1</div>
+                    <div>
+                        <p class="font-medium">用 Safari 打开</p>
+                        <p class="text-sm text-slate-400 mt-1">请确保使用 Safari 浏览器打开此页面</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="step-card bg-slate-800/60 border border-slate-700/50">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold flex-shrink-0">2</div>
+                    <div>
+                        <p class="font-medium">点击分享按钮</p>
+                        <p class="text-sm text-slate-400 mt-1">点击 Safari 底部中间的「分享」图标 ⬆️</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="step-card bg-slate-800/60 border border-slate-700/50">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold flex-shrink-0">3</div>
+                    <div>
+                        <p class="font-medium">添加到主屏幕</p>
+                        <p class="text-sm text-slate-400 mt-1">在分享菜单中向下滑动，找到「添加至主屏幕」</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="step-card bg-slate-800/60 border border-slate-700/50">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold flex-shrink-0">4</div>
+                    <div>
+                        <p class="font-medium">点击「添加」</p>
+                        <p class="text-sm text-slate-400 mt-1">点击右上角「添加」，即可在主屏幕看到 DreamSync</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Android 安装指南 -->
+    <div id="android-guide" class="fade-up mt-8" style="animation-delay:.3s">
+        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <span class="text-2xl">🤖</span> Android 安装
+        </h2>
+        
+        <div class="space-y-3">
+            <div class="step-card bg-slate-800/60 border border-slate-700/50">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center font-bold flex-shrink-0">1</div>
+                    <div>
+                        <p class="font-medium">用 Chrome 打开</p>
+                        <p class="text-sm text-slate-400 mt-1">使用 Chrome 或 Edge 浏览器打开</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="step-card bg-slate-800/60 border border-slate-700/50">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center font-bold flex-shrink-0">2</div>
+                    <div>
+                        <p class="font-medium">点击菜单</p>
+                        <p class="text-sm text-slate-400 mt-1">点击右上角三个点 ⋮ 选择「添加到主屏幕」</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="step-card bg-slate-800/60 border border-slate-700/50">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center font-bold flex-shrink-0">3</div>
+                    <div>
+                        <p class="font-medium">确认安装</p>
+                        <p class="text-sm text-slate-400 mt-1">点击「添加」，DreamSync 将出现在主屏幕</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 功能对比 -->
+    <div class="mt-10 p-5 rounded-2xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 fade-up" style="animation-delay:.4s">
+        <h3 class="font-semibold mb-3">📱 安装后的好处</h3>
+        <ul class="text-sm text-slate-300 space-y-2">
+            <li>✅ <span class="text-white">全屏体验</span> - 隐藏浏览器地址栏</li>
+            <li>✅ <span class="text-white">快速启动</span> - 从主屏幕一键打开</li>
+            <li>✅ <span class="text-white">离线可用</span> - 部分功能离线可用</li>
+            <li>✅ <span class="text-white">推送通知</span> - 接收睡前提醒</li>
+            <li>✅ <span class="text-white">原生体验</span> - 像原生 APP 一样流畅</li>
+        </ul>
+    </div>
+
+    <!-- 打开 APP 按钮 -->
+    <div class="mt-8 text-center fade-up" style="animation-delay:.5s">
+        <a href="app.html" class="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 font-semibold text-lg hover:opacity-90 transition">
+            🚀 立即打开 APP
+        </a>
+    </div>
+
+    <!-- 底部 -->
+    <p class="text-center text-xs text-slate-500 mt-8">
+        DreamSync v2.0 · 在梦境中相遇
+    </p>
+</div>
+
+<script>
+// 星空
+(function(){const c=document.getElementById('stars');for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*3}s`;c.appendChild(s)}})();
+
+// 检测设备
+const ua = navigator.userAgent.toLowerCase();
+const isIOS = /iphone|ipad|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isAndroid = /android/.test(ua);
+
+const info = document.getElementById('device-info');
+if (isIOS) {
+    info.textContent = '检测到 iPhone / iPad';
+    document.getElementById('android-guide').style.display = 'none';
+} else if (isAndroid) {
+    info.textContent = '检测到 Android 设备';
+    document.getElementById('ios-guide').style.display = 'none';
+} else {
+    info.textContent = '检测到桌面设备 - 建议在手机上安装';
+}
+
+// 检测是否已安装 PWA
+if (window.matchMedia('(display-mode: standalone)').matches) {
+    document.querySelector('h1').textContent = 'Welcome back!';
+    document.querySelector('h1').classList.add('text-emerald-400');
+}
+</script>
+</body>
+</html>
