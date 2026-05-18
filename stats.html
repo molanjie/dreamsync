@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamSync - 梦境数据报告</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);min-height:100vh;color:white}
+        .star{position:fixed;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw var(--d,3s) ease-in-out infinite;opacity:0}
+        @keyframes tw{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:.7;transform:scale(1)}}
+        .glass{background:rgba(15,23,42,.6);backdrop-filter:blur(20px);border:1px solid rgba(99,102,241,.2);transition:all .35s}
+        .glass:hover{border-color:rgba(99,102,241,.4);box-shadow:0 15px 30px rgba(99,102,241,.1)}
+
+        /* 折线图 */
+        .chart-line{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+        .chart-area{opacity:.15}
+        .chart-dot{transition:all .2s;cursor:pointer}
+        .chart-dot:hover{r:6;filter:drop-shadow(0 0 6px rgba(99,102,241,.8))}
+
+        /* 热力图 */
+        .heat-cell{border-radius:3px;transition:all .2s;cursor:pointer}
+        .heat-cell:hover{transform:scale(1.3);z-index:2;position:relative}
+
+        /* 环形图 */
+        .donut{transform:rotate(-90deg)}
+        .donut-seg{transition:all .5s cubic-bezier(.4,0,.2,1);cursor:pointer}
+        .donut-seg:hover{opacity:.85;filter:brightness(1.15)}
+
+        /* 动画 */
+        @keyframes countUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .count-anim{animation:countUp .5s ease forwards}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .fade-up{animation:fadeUp .6s ease forwards}
+        .fade-up-d1{animation:fadeUp .6s .1s ease forwards;opacity:0}
+        .fade-up-d2{animation:fadeUp .6s .2s ease forwards;opacity:0}
+        .fade-up-d3{animation:fadeUp .6s .3s ease forwards;opacity:0}
+
+        /* 标签页 */
+        .tab{padding:8px 16px;border-radius:10px;font-size:13px;cursor:pointer;transition:all .25s;color:#94a3b8}
+        .tab:hover{color:#c7d2fe}
+        .tab.active{background:rgba(99,102,241,.2);color:#818cf8}
+
+        /* 柱状图 */
+        .bar-col{transition:all .5s cubic-bezier(.4,0,.2,1)}
+        .bar-col:hover{filter:brightness(1.2)}
+        .bar-col:hover .bar-tooltip{opacity:1;transform:translateY(-4px)}
+        .bar-tooltip{opacity:0;transition:all .2s;transform:translateY(0)}
+
+        /* 滚动条 */
+        ::-webkit-scrollbar{width:6px}
+        ::-webkit-scrollbar-track{background:rgba(15,23,42,.5)}
+        ::-webkit-scrollbar-thumb{background:linear-gradient(#6366f1,#8b5cf6);border-radius:3px}
+    </style>
+</head>
+<body>
+<div id="stars" class="pointer-events-none"></div>
+
+<!-- 导航 -->
+<nav class="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/80 border-b border-slate-800/50">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <a href="app.html" class="text-slate-400 hover:text-white transition text-sm">← 返回</a>
+            <div class="w-px h-5 bg-slate-700"></div>
+            <span class="text-sm text-slate-300">📊</span>
+            <span class="font-bold text-base bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">梦境数据报告</span>
+        </div>
+        <div class="flex gap-2" id="timeTabs">
+            <span class="tab" data-range="week" onclick="switchRange('week')">本周</span>
+            <span class="tab active" data-range="month" onclick="switchRange('month')">本月</span>
+            <span class="tab" data-range="year" onclick="switchRange('year')">全年</span>
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-6xl mx-auto px-4 py-6 pb-20 space-y-6">
+
+    <!-- 总览卡片 -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 fade-up">
+        <div class="glass rounded-2xl p-4 text-center">
+            <p class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 count-anim">47</p>
+            <p class="text-xs text-slate-400 mt-1">总梦境数</p>
+            <p class="text-xs text-emerald-400 mt-1">↑ 12% vs 上月</p>
+        </div>
+        <div class="glass rounded-2xl p-4 text-center">
+            <p class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-400 count-anim">14</p>
+            <p class="text-xs text-slate-400 mt-1">清醒梦</p>
+            <p class="text-xs text-emerald-400 mt-1">↑ 8% vs 上月</p>
+        </div>
+        <div class="glass rounded-2xl p-4 text-center">
+            <p class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400 count-anim">7.2</p>
+            <p class="text-xs text-slate-400 mt-1">平均清晰度</p>
+            <p class="text-xs text-emerald-400 mt-1">↑ 0.5 vs 上月</p>
+        </div>
+        <div class="glass rounded-2xl p-4 text-center">
+            <p class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-rose-400 count-anim">18天</p>
+            <p class="text-xs text-slate-400 mt-1">连续记录</p>
+            <p class="text-xs text-amber-400 mt-1">🏆 最长记录</p>
+        </div>
+        <div class="glass rounded-2xl p-4 text-center col-span-2 md:col-span-1">
+            <p class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-400 count-anim">23</p>
+            <p class="text-xs text-slate-400 mt-1">梦境共鸣</p>
+            <p class="text-xs text-emerald-400 mt-1">↑ 15% vs 上月</p>
+        </div>
+    </div>
+
+    <!-- 折线图: 梦境频率 -->
+    <div class="glass rounded-3xl p-6 fade-up-d1">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="font-bold text-lg">📈 梦境频率趋势</h3>
+                <p class="text-xs text-slate-400 mt-0.5">每天记录的梦境数量</p>
+            </div>
+            <div class="flex items-center space-x-4 text-xs">
+                <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-indigo-500 rounded inline-block"></span>总梦境</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-yellow-500 rounded inline-block"></span>清醒梦</span>
+            </div>
+        </div>
+        <svg id="lineChart" viewBox="0 0 700 200" class="w-full" style="max-height:220px">
+            <!-- 网格 -->
+            <line x1="40" y1="10" x2="40" y2="180" stroke="rgba(99,102,241,.1)" stroke-width="1"/>
+            <line x1="40" y1="180" x2="690" y2="180" stroke="rgba(99,102,241,.15)" stroke-width="1"/>
+            <line x1="40" y1="140" x2="690" y2="140" stroke="rgba(99,102,241,.06)" stroke-width="1" stroke-dasharray="4"/>
+            <line x1="40" y1="100" x2="690" y2="100" stroke="rgba(99,102,241,.06)" stroke-width="1" stroke-dasharray="4"/>
+            <line x1="40" y1="60" x2="690" y2="60" stroke="rgba(99,102,241,.06)" stroke-width="1" stroke-dasharray="4"/>
+            <!-- Y 轴标签 -->
+            <text x="30" y="184" fill="#64748b" font-size="10" text-anchor="end">0</text>
+            <text x="30" y="144" fill="#64748b" font-size="10" text-anchor="end">2</text>
+            <text x="30" y="104" fill="#64748b" font-size="10" text-anchor="end">4</text>
+            <text x="30" y="64" fill="#64748b" font-size="10" text-anchor="end">6</text>
+            <!-- X 轴标签 -->
+            <text x="80" y="198" fill="#64748b" font-size="10" text-anchor="middle">1日</text>
+            <text x="175" y="198" fill="#64748b" font-size="10" text-anchor="middle">5日</text>
+            <text x="270" y="198" fill="#64748b" font-size="10" text-anchor="middle">10日</text>
+            <text x="365" y="198" fill="#64748b" font-size="10" text-anchor="middle">15日</text>
+            <text x="460" y="198" fill="#64748b" font-size="10" text-anchor="middle">20日</text>
+            <text x="555" y="198" fill="#64748b" font-size="10" text-anchor="middle">25日</text>
+            <text x="650" y="198" fill="#64748b" font-size="10" text-anchor="middle">30日</text>
+        </svg>
+    </div>
+
+    <!-- 热力图 + 环形图 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 热力图 -->
+        <div class="glass rounded-3xl p-6 fade-up-d2">
+            <h3 class="font-bold mb-1">🗓️ 梦境热力图</h3>
+            <p class="text-xs text-slate-400 mb-4">最近 3 个月记录频率</p>
+            <div id="heatmap" class="flex gap-1"></div>
+            <div class="flex items-center justify-between mt-3 text-xs text-slate-500">
+                <span>少</span>
+                <div class="flex gap-1">
+                    <span class="w-3 h-3 rounded-sm bg-slate-800"></span>
+                    <span class="w-3 h-3 rounded-sm" style="background:rgba(99,102,241,.25)"></span>
+                    <span class="w-3 h-3 rounded-sm" style="background:rgba(99,102,241,.5)"></span>
+                    <span class="w-3 h-3 rounded-sm" style="background:rgba(99,102,241,.75)"></span>
+                    <span class="w-3 h-3 rounded-sm bg-indigo-500"></span>
+                </div>
+                <span>多</span>
+            </div>
+        </div>
+
+        <!-- 环形图 -->
+        <div class="glass rounded-3xl p-6 fade-up-d2">
+            <h3 class="font-bold mb-1">🎯 梦境类型分布</h3>
+            <p class="text-xs text-slate-400 mb-4">各类型梦境占比</p>
+            <div class="flex items-center justify-center">
+                <svg id="donutChart" viewBox="0 0 200 200" width="200" height="200">
+                    <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(99,102,241,.1)" stroke-width="28"/>
+                </svg>
+                <div class="ml-6 space-y-2 text-sm" id="donutLegend"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 柱状图: 情绪分布 -->
+    <div class="glass rounded-3xl p-6 fade-up-d3">
+        <h3 class="font-bold mb-1">📊 情绪分布</h3>
+        <p class="text-xs text-slate-400 mb-5">梦境中各情绪出现频次</p>
+        <div class="flex items-end justify-between space-x-3" style="height:180px" id="emotionBars"></div>
+    </div>
+
+    <!-- 清晰度雷达 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass rounded-3xl p-6 fade-up-d3">
+            <h3 class="font-bold mb-1">🕸️ 梦境维度雷达</h3>
+            <p class="text-xs text-slate-400 mb-4">综合评估你的梦境质量</p>
+            <svg id="radarChart" viewBox="0 0 300 300" class="w-full" style="max-width:320px;margin:0 auto;display:block"></svg>
+        </div>
+
+        <!-- 高频标签 -->
+        <div class="glass rounded-3xl p-6 fade-up-d3">
+            <h3 class="font-bold mb-1">🏷️ 高频梦境标签</h3>
+            <p class="text-xs text-slate-400 mb-4">出现频率最高的梦境元素</p>
+            <div class="space-y-3" id="tagList"></div>
+        </div>
+    </div>
+
+    <!-- 梦境时间分布 -->
+    <div class="glass rounded-3xl p-6 fade-up-d3">
+        <h3 class="font-bold mb-1">⏰ 梦境时段分布</h3>
+        <p class="text-xs text-slate-400 mb-5">你通常在什么时间段做最清晰的梦</p>
+        <div class="grid grid-cols-12 gap-2" id="timeDistribution"></div>
+        <div class="flex justify-between text-xs text-slate-500 mt-3">
+            <span>22:00</span><span>00:00</span><span>02:00</span><span>04:00</span><span>06:00</span><span>08:00</span>
+        </div>
+    </div>
+
+    <!-- 个人对比 -->
+    <div class="glass rounded-3xl p-6 fade-up-d3">
+        <h3 class="font-bold mb-1">🏆 你 vs 全站用户</h3>
+        <p class="text-xs text-slate-400 mb-5">你的数据与全体用户的对比</p>
+        <div class="space-y-4" id="comparisonList"></div>
+    </div>
+</div>
+
+<script>
+// 星空
+(function(){const c=document.getElementById('stars');for(let i=0;i<80;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*3}s`;c.appendChild(s)}})();
+
+// === 折线图 ===
+(function(){
+    const days=30;
+    const totalData = [1,2,1,3,2,0,2,3,1,2,4,2,1,3,2,3,1,2,3,4,2,1,3,2,3,4,2,3,2,3];
+    const lucidData = [0,1,0,1,1,0,0,1,0,1,2,1,0,1,0,2,0,1,1,2,1,0,1,1,1,2,1,1,0,2];
+    const svg = document.getElementById('lineChart');
+    const w=700,h=200,padL=40,padR=10,padT=10,padB=25;
+    const chartW = w-padL-padR, chartH = h-padT-padB;
+    const maxVal = 5;
+
+    function toX(i){return padL + (i/(days-1))*chartW}
+    function toY(v){return padT + chartH - (v/maxVal)*chartH}
+
+    // 总梦境面积
+    let areaD = `M${toX(0)},${toY(0)}`;
+    totalData.forEach((v,i)=>{areaD += ` L${toX(i)},${toY(v)}`});
+    areaD += ` L${toX(days-1)},${toY(0)} Z`;
+
+    const area = document.createElementNS('http://www.w3.org/2000/svg','path');
+    area.setAttribute('d',areaD);
+    area.setAttribute('fill','url(#lineGrad)');
+    area.setAttribute('class','chart-area');
+    svg.appendChild(area);
+
+    const grad = document.createElementNS('http://www.w3.org/2000/svg','linearGradient');
+    grad.id='lineGrad';grad.setAttribute('x1','0');grad.setAttribute('y1','0');grad.setAttribute('x2','0');grad.setAttribute('y2','1');
+    const s1=document.createElementNS('http://www.w3.org/2000/svg','stop');s1.setAttribute('offset','0%');s1.setAttribute('stop-color','#6366f1');
+    const s2=document.createElementNS('http://www.w3.org/2000/svg','stop');s2.setAttribute('offset','100%');s2.setAttribute('stop-color','#6366f1');s2.setAttribute('stop-opacity','0');
+    grad.append(s1,s2);svg.appendChild(grad);
+
+    // 总梦境线
+    let lineD='';totalData.forEach((v,i)=>{lineD+=(i===0?'M':' L')+`${toX(i)},${toY(v)}`});
+    const line=document.createElementNS('http://www.w3.org/2000/svg','path');
+    line.setAttribute('d',lineD);line.setAttribute('stroke','#6366f1');line.setAttribute('class','chart-line');
+    svg.appendChild(line);
+
+    // 清醒梦线
+    let lucidD='';lucidData.forEach((v,i)=>{lucidD+=(i===0?'M':' L')+`${toX(i)},${toY(v)}`});
+    const lucidLine=document.createElementNS('http://www.w3.org/2000/svg','path');
+    lucidLine.setAttribute('d',lucidD);lucidLine.setAttribute('stroke','#f59e0b');lucidLine.setAttribute('stroke-dasharray','6 3');lucidLine.setAttribute('class','chart-line');
+    svg.appendChild(lucidLine);
+
+    // 数据点
+    totalData.forEach((v,i)=>{
+        const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        c.setAttribute('cx',toX(i));c.setAttribute('cy',toY(v));c.setAttribute('r','3');c.setAttribute('fill','#6366f1');
+        c.setAttribute('class','chart-dot');
+        svg.appendChild(c);
+    });
+})();
+
+// === 热力图 ===
+(function(){
+    const container = document.getElementById('heatmap');
+    const weeks = 13;
+    for(let w=0;w<weeks;w++){
+        const col=document.createElement('div');
+        col.className='flex flex-col gap-1';
+        for(let d=0;d<7;d++){
+            const cell=document.createElement('div');
+            const val=Math.random();
+            let bg;
+            if(val<.25) bg='background:rgba(30,41,59,.6)';
+            else if(val<.5) bg='background:rgba(99,102,241,.25)';
+            else if(val<.7) bg='background:rgba(99,102,241,.5)';
+            else if(val<.85) bg='background:rgba(99,102,241,.75)';
+            else bg='background:#6366f1';
+            cell.className='heat-cell';
+            cell.style.cssText=`width:14px;height:14px;${bg}`;
+            col.appendChild(cell);
+        }
+        container.appendChild(col);
+    }
+})();
+
+// === 环形图 ===
+(function(){
+    const svg = document.getElementById('donutChart');
+    const legend = document.getElementById('donutLegend');
+    const data = [
+        {name:'普通梦',pct:40,color:'#6366f1'},
+        {name:'清醒梦',pct:22,color:'#f59e0b'},
+        {name:'噩梦',pct:14,color:'#ec4899'},
+        {name:'重复梦',pct:12,color:'#8b5cf6'},
+        {name:'预知梦',pct:7,color:'#10b981'},
+        {name:'其他',pct:5,color:'#475569'}
+    ];
+    const r=70,circ=2*Math.PI*r,offset=0;
+    data.forEach(d=>{
+        const seg=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        const segLen = (d.pct/100)*circ;
+        seg.setAttribute('cx','100');seg.setAttribute('cy','100');seg.setAttribute('r',r);
+        seg.setAttribute('fill','none');seg.setAttribute('stroke',d.color);seg.setAttribute('stroke-width','28');
+        seg.setAttribute('stroke-dasharray',`${segLen} ${circ-segLen}`);
+        seg.setAttribute('stroke-dashoffset',`${-offset}`);
+        seg.setAttribute('class','donut-seg');
+        seg.setAttribute('transform','rotate(-90 100 100)');
+        svg.appendChild(seg);
+        offset+=segLen;
+    });
+    // 中心文字
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x','100');t.setAttribute('y','95');t.setAttribute('text-anchor','middle');t.setAttribute('fill','white');t.setAttribute('font-size','24');t.setAttribute('font-weight','bold');
+    t.textContent='47';
+    svg.appendChild(t);
+    const t2=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t2.setAttribute('x','100');t2.setAttribute('y','115');t2.setAttribute('text-anchor','middle');t2.setAttribute('fill','#94a3b8');t2.setAttribute('font-size','11');
+    t2.textContent='总梦境';
+    svg.appendChild(t2);
+    // 图例
+    legend.innerHTML=data.map(d=>`<div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full inline-block" style="background:${d.color}"></span><span class="text-slate-300">${d.name}</span><span class="text-slate-500 ml-auto">${d.pct}%</span></div>`).join('');
+})();
+
+// === 情绪柱状图 ===
+(function(){
+    const container = document.getElementById('emotionBars');
+    const data = [
+        {name:'愉悦',count:18,color:'from-emerald-500 to-teal-500'},
+        {name:'平静',count:14,color:'from-blue-500 to-cyan-500'},
+        {name:'兴奋',count:10,color:'from-amber-500 to-orange-500'},
+        {name:'焦虑',count:8,color:'from-yellow-600 to-amber-600'},
+        {name:'恐惧',count:5,color:'from-red-500 to-rose-500'},
+        {name:'困惑',count:7,color:'from-purple-500 to-violet-500'},
+        {name:'悲伤',count:4,color:'from-slate-500 to-slate-600'},
+        {name:'惊喜',count:6,color:'from-pink-500 to-fuchsia-500'}
+    ];
+    const max = Math.max(...data.map(d=>d.count));
+    container.innerHTML = data.map(d=>`
+        <div class="flex-1 flex flex-col items-center justify-end h-full relative">
+            <div class="bar-tooltip absolute -top-8 text-xs text-white bg-slate-800 px-2 py-1 rounded-lg whitespace-nowrap">${d.name}: ${d.count}</div>
+            <div class="bar-col w-full max-w-[40px] rounded-t-lg bg-gradient-to-t ${d.color}" style="height:${(d.count/max)*100}%"></div>
+            <span class="text-xs text-slate-400 mt-2 text-center">${d.name}</span>
+        </div>
+    `).join('');
+})();
+
+// === 雷达图 ===
+(function(){
+    const svg = document.getElementById('radarChart');
+    const cx=150,cy=150,r=100;
+    const dims = ['清晰度','情绪丰富','符号密度','叙事性','清醒度','创造力'];
+    const vals = [.78,.65,.82,.70,.55,.88];
+    const n=dims.length;
+
+    // 网格
+    [1,.66,.33].forEach(scale=>{
+        let path='';
+        for(let i=0;i<n;i++){
+            const angle = (Math.PI*2/n)*i - Math.PI/2;
+            const x=cx+Math.cos(angle)*r*scale;
+            const y=cy+Math.sin(angle)*r*scale;
+            path+=(i===0?'M':'L')+` ${x} ${y}`;
+        }
+        path+='Z';
+        const g=document.createElementNS('http://www.w3.org/2000/svg','path');
+        g.setAttribute('d',path);g.setAttribute('fill','none');g.setAttribute('stroke','rgba(99,102,241,.12)');g.setAttribute('stroke-width','1');
+        svg.appendChild(g);
+    });
+
+    // 轴线
+    for(let i=0;i<n;i++){
+        const angle=(Math.PI*2/n)*i - Math.PI/2;
+        const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1',cx);line.setAttribute('y1',cy);
+        line.setAttribute('x2',cx+Math.cos(angle)*r);line.setAttribute('y2',cy+Math.sin(angle)*r);
+        line.setAttribute('stroke','rgba(99,102,241,.1)');line.setAttribute('stroke-width','1');
+        svg.appendChild(line);
+    }
+
+    // 数据多边形
+    let dataPath='';
+    for(let i=0;i<n;i++){
+        const angle=(Math.PI*2/n)*i - Math.PI/2;
+        const x=cx+Math.cos(angle)*r*vals[i];
+        const y=cy+Math.sin(angle)*r*vals[i];
+        dataPath+=(i===0?'M':'L')+` ${x} ${y}`;
+    }
+    dataPath+='Z';
+
+    const grad=document.createElementNS('http://www.w3.org/2000/svg','radialGradient');
+    grad.id='radarGrad';
+    const s1=document.createElementNS('http://www.w3.org/2000/svg','stop');s1.setAttribute('offset','0%');s1.setAttribute('stop-color','#6366f1');s1.setAttribute('stop-opacity','.3');
+    const s2=document.createElementNS('http://www.w3.org/2000/svg','stop');s2.setAttribute('offset','100%');s2.setAttribute('stop-color','#6366f1');s2.setAttribute('stop-opacity','.08');
+    grad.append(s1,s2);svg.appendChild(grad);
+
+    const dataArea=document.createElementNS('http://www.w3.org/2000/svg','path');
+    dataArea.setAttribute('d',dataPath);dataArea.setAttribute('fill','url(#radarGrad)');dataArea.setAttribute('stroke','#6366f1');dataArea.setAttribute('stroke-width','2');
+    svg.appendChild(dataArea);
+
+    // 数据点 + 标签
+    for(let i=0;i<n;i++){
+        const angle=(Math.PI*2/n)*i - Math.PI/2;
+        const x=cx+Math.cos(angle)*r*vals[i];
+        const y=cy+Math.sin(angle)*r*vals[i];
+        const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        dot.setAttribute('cx',x);dot.setAttribute('cy',y);dot.setAttribute('r','4');dot.setAttribute('fill','#6366f1');
+        svg.appendChild(dot);
+
+        const lx=cx+Math.cos(angle)*(r+20);
+        const ly=cy+Math.sin(angle)*(r+20);
+        const label=document.createElementNS('http://www.w3.org/2000/svg','text');
+        label.setAttribute('x',lx);label.setAttribute('y',ly);label.setAttribute('text-anchor','middle');label.setAttribute('fill','#94a3b8');label.setAttribute('font-size','11');
+        label.textContent=dims[i];
+        svg.appendChild(label);
+    }
+})();
+
+// === 高频标签 ===
+(function(){
+    const container = document.getElementById('tagList');
+    const tags = [
+        {name:'飞翔',count:23,icon:'🕊️'},
+        {name:'水/海洋',count:18,icon:'🌊'},
+        {name:'城市',count:15,icon:'🏙️'},
+        {name:'追逐',count:12,icon:'🏃'},
+        {name:'家人',count:11,icon:'👨‍👩‍👧'},
+        {name:'天空',count:10,icon:'🌤️'},
+        {name:'坠落',count:8,icon:'⬇️'},
+        {name:'动物',count:7,icon:'🦊'},
+        {name:'学校',count:6,icon:'🏫'}
+    ];
+    const max = tags[0].count;
+    container.innerHTML = tags.map((t,i)=>`
+        <div class="flex items-center gap-3">
+            <span class="text-lg w-7 text-center">${t.icon}</span>
+            <div class="flex-1">
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-300">${t.name}</span>
+                    <span class="text-slate-400">${t.count}次</span>
+                </div>
+                <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full bg-gradient-to-r ${['from-indigo-500 to-purple-500','from-blue-500 to-cyan-500','from-emerald-500 to-teal-500','from-amber-500 to-orange-500','from-pink-500 to-rose-500','from-violet-500 to-fuchsia-500','from-red-500 to-rose-600','from-cyan-500 to-blue-500','from-slate-400 to-slate-500'][i%9]}"
+                         style="width:${(t.count/max)*100}%;transition:width 1s ease"></div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+})();
+
+// === 时段分布 ===
+(function(){
+    const container = document.getElementById('timeDistribution');
+    const hours = [3,5,8,12,15,18,14,10,6,3,2,1];
+    const max = Math.max(...hours);
+    container.innerHTML = hours.map((h,i)=>{
+        const pct = (h/max)*100;
+        const intensity = h/max;
+        return `<div class="flex flex-col items-center gap-1">
+            <div class="text-xs text-slate-400">${h}</div>
+            <div class="w-full rounded-t-md transition-all hover:opacity-80 cursor-pointer"
+                 style="height:${Math.max(pct,8)}%;background:rgba(99,102,241,${.2+intensity*.8})"
+                 title="${22+i}:00 - ${h}个梦"></div>
+        </div>`;
+    }).join('');
+})();
+
+// === 个人对比 ===
+(function(){
+    const container = document.getElementById('comparisonList');
+    const data = [
+        {label:'月均记录数',you:47,avg:28,unit:'个'},
+        {label:'清醒梦比例',you:30,avg:18,unit:'%'},
+        {label:'平均清晰度',you:7.2,avg:5.8,unit:'分'},
+        {label:'情绪积极比',you:68,avg:52,unit:'%'},
+        {label:'符号丰富度',you:82,avg:61,unit:'分'},
+        {label:'连续记录天数',you:18,avg:9,unit:'天'}
+    ];
+    const maxVal = 100;
+    container.innerHTML = data.map(d=>{
+        const youW = Math.min((d.you/maxVal)*100,100);
+        const avgW = Math.min((d.avg/maxVal)*100,100);
+        return `<div>
+            <div class="flex justify-between text-sm mb-1">
+                <span class="text-slate-300">${d.label}</span>
+                <span class="text-indigo-400 font-medium">${d.you}${d.unit} <span class="text-slate-500 text-xs">vs 全站 ${d.avg}${d.unit}</span></span>
+            </div>
+            <div class="space-y-1">
+                <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style="width:${youW}%"></div>
+                </div>
+                <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full bg-slate-600" style="width:${avgW}%"></div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+})();
+
+function switchRange(r){
+    document.querySelectorAll('#timeTabs .tab').forEach(t=>t.classList.toggle('active',t.dataset.range===r));
+}
+</script>
+</body>
+</html>
