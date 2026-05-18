@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamSync - 梦境应用</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            min-height: 100vh;
+            transition: all 0.5s ease;
+        }
+
+        /* 星空背景 */
+        .stars-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.5;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
+            opacity: 0;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 0.8; transform: scale(1); }
+        }
+
+        /* 玻璃卡片 */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15);
+        }
+
+        /* 输入框 */
+        .dream-input {
+            background: rgba(30, 41, 59, 0.5);
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .dream-input:focus {
+            border-color: #6366f1;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), 0 0 20px rgba(99, 102, 241, 0.2);
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        .dream-input::placeholder {
+            color: #64748b;
+        }
+
+        /* 标签按钮 */
+        .tab-btn {
+            position: relative;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .tab-btn:hover::before {
+            left: 100%;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+            color: #818cf8;
+            border-left: 3px solid #6366f1;
+        }
+
+        /* 日历样式 */
+        .calendar-day {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .calendar-day:hover {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .calendar-day.has-dream {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            font-weight: 600;
+        }
+
+        .calendar-day.today {
+            border: 2px solid #6366f1;
+        }
+
+        /* 情绪趋势图 */
+        .emotion-bar {
+            height: 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        /* Toast 通知 */
+        .toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+
+        .toast.error {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+        }
+
+        /* 骨架屏 */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(30, 41, 59, 0.5) 25%, rgba(51, 65, 85, 0.5) 50%, rgba(30, 41, 59, 0.5) 75%);
+            background-size: 200% 100%;
+            animation: skeleton 1.5s ease-in-out infinite;
+            border-radius: 8px;
+        }
+
+        @keyframes skeleton {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* 页面过渡动画 */
+        .page-enter {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+
+        .page-enter-active {
+            opacity: 1;
+            transform: translateX(0);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 聊天气泡 */
+        .chat-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            animation: bubbleIn 0.3s ease;
+        }
+
+        @keyframes bubbleIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .chat-bubble.sent {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-bubble.received {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-bottom-left-radius: 4px;
+        }
+
+        /* 成就徽章 */
+        .achievement-badge {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .achievement-badge.locked {
+            filter: grayscale(1);
+            opacity: 0.5;
+        }
+
+        .achievement-badge.unlocked {
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+        }
+
+        /* 词云样式 */
+        .word-cloud-item {
+            display: inline-block;
+            margin: 4px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .word-cloud-item:hover {
+            transform: scale(1.1);
+        }
+
+        /* 倒计时样式 */
+        .countdown-ring {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(#6366f1 var(--progress), rgba(30, 41, 59, 0.5) 0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .countdown-ring::before {
+            content: '';
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #0f172a;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 3px;
+        }
+
+        /* 主题切换过渡 */
+        body.theme-transition {
+            transition: background 0.5s ease, color 0.5s ease;
+        }
+
+        /* 深色模式 */
+        body.dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            color: white;
+        }
+
+        /* 浅色模式 */
+        body.light {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 50%, #f0f9ff 100%);
+            color: #1e293b;
+        }
+
+        body.light .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        body.light .dream-input {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(99, 102, 241, 0.3);
+            color: #1e293b;
+        }
+
+        body.light .dream-input::placeholder {
+            color: #64748b;
+        }
+
+        body.light .tab-btn.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: #4f46e5;
+        }
+    </style>
+</head>
+<body class="dark">
+    <!-- 星空背景 -->
+    <div class="stars-bg" id="stars"></div>
+
+    <!-- 顶部导航 -->
+    <nav class="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/80 border-b border-slate-800/50">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-xl animate-pulse">
+                    🌙
+                </div>
+                <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">DreamSync</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-slate-800 transition text-xl" id="theme-btn">🌙</button>
+                <button onclick="showNotifications()" class="p-2 rounded-lg hover:bg-slate-800 transition text-xl relative">
+                    🔔
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex flex-col md:flex-row min-h-[calc(100vh-4rem)] relative z-10">
+        <!-- 移动端底部导航 -->
+        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 flex justify-around py-2 z-50">
+            <button onclick="switchTab('dashboard')" class="tab-btn flex flex-col items-center p-2 rounded-lg text-xs" data-tab="dashboard">
+                <span class="text-xl">📊</span>
+                <span>仪表板</span>
+            </button>
+            <button onclick="switchTab('journal')" class="tab-btn flex flex-col items-center p-2 rounded-lg text-xs" data-tab="journal">
+                <span class="text-xl">📝</span>
+                <span>日记</span>
+            </button>
+            <button onclick="window.location.href='analysis.html'" class="tab-btn flex flex-col items-center p-2 rounded-lg text-xs text-purple-400">
+                <span class="text-xl">🤖</span>
+                <span>AI</span>
+            </button>
+            <button onclick="switchTab('community')" class="tab-btn flex flex-col items-center p-2 rounded-lg text-xs" data-tab="community">
+                <span class="text-xl">👥</span>
+                <span>社区</span>
+            </button>
+            <button onclick="switchTab('rooms')" class="tab-btn flex flex-col items-center p-2 rounded-lg text-xs" data-tab="rooms">
+                <span class="text-xl">💬</span>
+                <span>联机</span>
+            </button>
+            <button onclick="switchTab('profile')" class="tab-btn flex flex-col items-center p-2 rounded-lg text-xs" data-tab="profile">
+                <span class="text-xl">👤</span>
+                <span>我的</span>
+            </button>
+        </div>
+
+        <!-- 侧边栏 -->
+        <aside class="hidden md:block w-64 border-r border-slate-800/50 p-4 glass-card m-4 rounded-2xl">
+            <div class="space-y-2">
+                <button onclick="switchTab('dashboard')" class="tab-btn w-full text-left px-4 py-3 rounded-xl font-medium transition" data-tab="dashboard">📊 仪表板</button>
+                <button onclick="switchTab('journal')" class="tab-btn w-full text-left px-4 py-3 rounded-xl font-medium transition" data-tab="journal">📝 梦境日记</button>
+                <button onclick="window.location.href='analysis.html'" class="tab-btn w-full text-left px-4 py-3 rounded-xl font-medium transition text-purple-400">🤖 AI 分析</button>
+                <button onclick="switchTab('community')" class="tab-btn w-full text-left px-4 py-3 rounded-xl font-medium transition" data-tab="community">👥 社区</button>
+                <button onclick="switchTab('rooms')" class="tab-btn w-full text-left px-4 py-3 rounded-xl font-medium transition" data-tab="rooms">💬 联机房间</button>
+                <button onclick="window.location.href='stats.html'" class="tab-btn w-full text-left px-4 py-3 rounded-xl font-medium transition text-cyan-400">📊 数据报告</button>
+                <button onclick="switchTab('profile')" class="tab-btn w-full text-left px-4 py-3 rounded-xl font-medium transition" data-tab="profile">👤 个人资料</button>
+                <a href="meditation.html" class="tab-btn w-full text-left px-4 py-3 rounded-xl font-medium transition flex items-center gap-2 text-emerald-400">
+                    🧘 <span>睡前冥想</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- 主内容 -->
+        <main class="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-auto">
+            
+            <!-- 仪表板 -->
+            <div id="dashboard" class="tab-content">
+                <h1 class="text-2xl md:text-3xl font-bold mb-6">欢迎回来，<span id="username-display">梦境行者</span></h1>
+                
+                <!-- 统计卡片 -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="glass-card p-4 md:p-6 rounded-2xl text-center">
+                        <p class="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400" id="totalDreams">0</p>
+                        <p class="text-sm text-slate-400 mt-1">本月梦境</p>
+                    </div>
+                    <div class="glass-card p-4 md:p-6 rounded-2xl text-center">
+                        <p class="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-400" id="lucidDreams">0</p>
+                        <p class="text-sm text-slate-400 mt-1">清醒梦</p>
+                    </div>
+                    <div class="glass-card p-4 md:p-6 rounded-2xl text-center">
+                        <p class="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-rose-400" id="resonanceCount">0</p>
+                        <p class="text-sm text-slate-400 mt-1">梦境共鸣</p>
+                    </div>
+                    <div class="glass-card p-4 md:p-6 rounded-2xl text-center">
+                        <p class="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400" id="streakCount">7天</p>
+                        <p class="text-sm text-slate-400 mt-1">连续记录</p>
+                    </div>
+                </div>
+
+                <!-- 梦境日历和情绪趋势 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- 梦境日历 -->
+                    <div class="glass-card p-6 rounded-2xl">
+                        <h3 class="font-semibold mb-4">📅 梦境日历</h3>
+                        <div class="grid grid-cols-7 gap-1 text-center text-xs text-slate-400 mb-2">
+                            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+                        </div>
+                        <div class="grid grid-cols-7 gap-1" id="calendar"></div>
+                    </div>
+
+                    <!-- 情绪趋势 -->
+                    <div class="glass-card p-6 rounded-2xl">
+                        <h3 class="font-semibold mb-4">😊 情绪趋势（最近7天）</h3>
+                        <div class="space-y-3" id="emotion-trend"></div>
+                    </div>
+                </div>
+
+                <!-- 快捷操作 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <button onclick="switchTab('journal')" class="glass-card p-6 rounded-2xl text-left hover:scale-[1.02] transition group">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-2xl group-hover:scale-110 transition">➕</div>
+                            <div>
+                                <h3 class="font-semibold text-lg">记录新梦境</h3>
+                                <p class="text-sm text-slate-400">快速记录今天的梦境</p>
+                            </div>
+                        </div>
+                    </button>
+                    <button onclick="switchTab('rooms')" class="glass-card p-6 rounded-2xl text-left hover:scale-[1.02] transition group">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-2xl group-hover:scale-110 transition">💬</div>
+                            <div>
+                                <h3 class="font-semibold text-lg">加入联机</h3>
+                                <p class="text-sm text-slate-400">与他人同步入睡</p>
+                            </div>
+                        </div>
+                    </button>
+                    <a href="analysis.html" class="glass-card p-6 rounded-2xl text-left hover:scale-[1.02] transition group block">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-2xl group-hover:scale-110 transition">🤖</div>
+                            <div>
+                                <h3 class="font-semibold text-lg">AI 梦境分析</h3>
+                                <p class="text-sm text-slate-400">深度解析梦境符号与情绪</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- 最近梦境 -->
+                <div class="glass-card p-6 rounded-2xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold">📖 最近梦境</h3>
+                        <button onclick="switchTab('journal')" class="text-sm text-indigo-400 hover:text-indigo-300 transition">查看全部 →</button>
+                    </div>
+                    <div class="space-y-3" id="recentDreamsList"></div>
+                </div>
+            </div>
+
+            <!-- 梦境日记 -->
+            <div id="journal" class="tab-content hidden">
+                <div class="flex items-center justify-between mb-6">
+                    <h1 class="text-2xl md:text-3xl font-bold">梦境日记</h1>
+                    <span class="text-sm text-slate-400" id="total-dreams-count">共 0 个梦境</span>
+                </div>
+                
+                <div class="max-w-2xl">
+                    <div class="glass-card p-6 rounded-2xl mb-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">梦境标题</label>
+                                <input type="text" id="dreamTitle" placeholder="给你的梦起个名字..." class="dream-input w-full px-4 py-3 rounded-xl">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">梦境内容</label>
+                                <textarea id="dreamContent" placeholder="描述你的梦境..." rows="6" class="dream-input w-full px-4 py-3 rounded-xl resize-none"></textarea>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">梦境类型</label>
+                                    <select id="dreamType" class="dream-input w-full px-4 py-3 rounded-xl">
+                                        <option value="normal">🌙 普通梦</option>
+                                        <option value="lucid">⚡ 清醒梦</option>
+                                        <option value="nightmare">😱 噩梦</option>
+                                        <option value="recurring">🔄 重复梦</option>
+                                        <option value="prophetic">🔮 预知梦</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">主要情绪</label>
+                                    <select id="dreamEmotion" class="dream-input w-full px-4 py-3 rounded-xl">
+                                        <option value="平静">😌 平静</option>
+                                        <option value="愉悦">😊 愉悦</option>
+                                        <option value="兴奋">🤩 兴奋</option>
+                                        <option value="焦虑">😰 焦虑</option>
+                                        <option value="恐惧">😨 恐惧</option>
+                                        <option value="悲伤">😢 悲伤</option>
+                                        <option value="困惑">😕 困惑</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">清晰度: <span id="clarityValue" class="text-indigo-400 font-semibold">5</span>/10</label>
+                                <input type="range" id="dreamClarity" min="1" max="10" value="5" class="w-full accent-indigo-500" oninput="document.getElementById('clarityValue').textContent = this.value">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">标签（用逗号分隔）</label>
+                                <input type="text" id="dreamTags" placeholder="飞翔、水、家人..." class="dream-input w-full px-4 py-3 rounded-xl">
+                                <div class="flex flex-wrap gap-2 mt-2" id="tag-suggestions">
+                                    <span class="text-xs bg-slate-700/50 px-2 py-1 rounded-full cursor-pointer hover:bg-indigo-500/30 transition" onclick="addTag('飞翔')">飞翔</span>
+                                    <span class="text-xs bg-slate-700/50 px-2 py-1 rounded-full cursor-pointer hover:bg-indigo-500/30 transition" onclick="addTag('水')">水</span>
+                                    <span class="text-xs bg-slate-700/50 px-2 py-1 rounded-full cursor-pointer hover:bg-indigo-500/30 transition" onclick="addTag('追逐')">追逐</span>
+                                    <span class="text-xs bg-slate-700/50 px-2 py-1 rounded-full cursor-pointer hover:bg-indigo-500/30 transition" onclick="addTag('坠落')">坠落</span>
+                                    <span class="text-xs bg-slate-700/50 px-2 py-1 rounded-full cursor-pointer hover:bg-indigo-500/30 transition" onclick="addTag('家人')">家人</span>
+                                </div>
+                            </div>
+                            
+                            <button onclick="saveDream()" class="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition font-semibold text-lg">
+                                💾 保存梦境
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 社区 -->
+            <div id="community" class="tab-content hidden">
+                <div class="flex items-center justify-between mb-6">
+                    <h1 class="text-2xl md:text-3xl font-bold">梦境社区</h1>
+                    <div class="flex items-center space-x-3">
+                        <input type="text" placeholder="搜索梦境..." class="dream-input px-4 py-2 rounded-lg text-sm w-40 md:w-60" id="search-community" oninput="searchCommunity(this.value)">
+                        <select onchange="filterCommunity(this.value)" class="dream-input px-4 py-2 rounded-lg text-sm">
+                            <option value="all">全部</option>
+                            <option value="lucid">清醒梦</option>
+                            <option value="normal">普通梦</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 热门标签 -->
+                <div class="glass-card p-4 rounded-2xl mb-6">
+                    <h3 class="text-sm font-medium text-slate-400 mb-3">🔥 热门标签</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1 rounded-full text-xs bg-indigo-500/20 text-indigo-400 cursor-pointer hover:bg-indigo-500/30 transition">#飞翔 234</span>
+                        <span class="px-3 py-1 rounded-full text-xs bg-purple-500/20 text-purple-400 cursor-pointer hover:bg-purple-500/30 transition">#清醒梦 189</span>
+                        <span class="px-3 py-1 rounded-full text-xs bg-pink-500/20 text-pink-400 cursor-pointer hover:bg-pink-500/30 transition">#水 156</span>
+                        <span class="px-3 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-400 cursor-pointer hover:bg-emerald-500/30 transition">#天空 123</span>
+                        <span class="px-3 py-1 rounded-full text-xs bg-amber-500/20 text-amber-400 cursor-pointer hover:bg-amber-500/30 transition">#追逐 98</span>
+                    </div>
+                </div>
+                
+                <div class="space-y-4" id="communityList"></div>
+            </div>
+
+            <!-- 联机房间 -->
+            <div id="rooms" class="tab-content hidden">
+                <div class="flex items-center justify-between mb-6">
+                    <h1 class="text-2xl md:text-3xl font-bold">梦境联机房间</h1>
+                    <button onclick="showCreateRoomModal()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition font-medium">
+                        ➕ 创建房间
+                    </button>
+                </div>
+
+                <!-- 当前房间聊天 -->
+                <div id="room-chat" class="hidden glass-card p-6 rounded-2xl mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold">💬 <span id="current-room-name">清醒梦探索室</span></h3>
+                        <button onclick="leaveRoom()" class="text-sm text-red-400 hover:text-red-300 transition">离开房间</button>
+                    </div>
+                    
+                    <!-- 聊天消息 -->
+                    <div class="h-64 overflow-y-auto mb-4 space-y-2 p-4 bg-slate-800/30 rounded-xl" id="chat-messages"></div>
+                    
+                    <!-- 输入消息 -->
+                    <div class="flex space-x-2">
+                        <input type="text" id="chat-input" placeholder="输入消息..." class="dream-input flex-1 px-4 py-2 rounded-xl" onkeypress="if(event.key==='Enter')sendMessage()">
+                        <button onclick="sendMessage()" class="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 transition">发送</button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="roomsList"></div>
+            </div>
+
+            <!-- 个人资料 -->
+            <div id="profile" class="tab-content hidden">
+                <h1 class="text-2xl md:text-3xl font-bold mb-6">个人资料</h1>
+                
+                <div class="max-w-4xl space-y-6">
+                    <!-- 头像和基本信息 -->
+                    <div class="glass-card p-6 rounded-2xl">
+                        <div class="flex items-center space-x-6">
+                            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-5xl" id="user-avatar">🌙</div>
+                            <div class="flex-1">
+                                <input type="text" id="profileName" value="星空漫步者" class="w-full bg-transparent border-b border-slate-700 pb-2 font-bold text-2xl mb-2 focus:outline-none focus:border-indigo-500 transition">
+                                <input type="text" id="profileBio" value="在梦境中寻找答案的旅人" class="w-full bg-transparent border-b border-slate-700 pb-2 text-slate-400 focus:outline-none focus:border-indigo-500 transition">
+                            </div>
+                        </div>
+                        <button onclick="saveProfile()" class="mt-4 px-5 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 transition text-white">保存修改</button>
+                    </div>
+
+                    <!-- 统计数据 -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="glass-card p-4 rounded-2xl text-center">
+                            <p class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400" id="statTotal">0</p>
+                            <p class="text-sm text-slate-400 mt-1">总梦境</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-2xl text-center">
+                            <p class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-400" id="statLucid">0</p>
+                            <p class="text-sm text-slate-400 mt-1">清醒梦</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-2xl text-center">
+                            <p class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400" id="statStreak">7</p>
+                            <p class="text-sm text-slate-400 mt-1">连续天数</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-2xl text-center">
+                            <p class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-rose-400" id="statResonance">0</p>
+                            <p class="text-sm text-slate-400 mt-1">共鸣数</p>
+                        </div>
+                    </div>
+
+                    <!-- 成就系统 -->
+                    <div class="glass-card p-6 rounded-2xl">
+                        <h3 class="font-semibold mb-4">🏆 成就徽章</h3>
+                        <div class="grid grid-cols-4 md:grid-cols-8 gap-4">
+                            <div class="text-center">
+                                <div class="achievement-badge unlocked bg-gradient-to-br from-yellow-500 to-orange-500 mx-auto mb-2">🎯</div>
+                                <p class="text-xs text-slate-400">首次记录</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="achievement-badge unlocked bg-gradient-to-br from-indigo-500 to-purple-500 mx-auto mb-2">⚡</div>
+                                <p class="text-xs text-slate-400">清醒梦者</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="achievement-badge unlocked bg-gradient-to-br from-emerald-500 to-teal-500 mx-auto mb-2">🔥</div>
+                                <p class="text-xs text-slate-400">连续7天</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="achievement-badge locked bg-slate-700 mx-auto mb-2">💎</div>
+                                <p class="text-xs text-slate-500">连续30天</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="achievement-badge locked bg-slate-700 mx-auto mb-2">🌟</div>
+                                <p class="text-xs text-slate-500">100个梦</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="achievement-badge locked bg-slate-700 mx-auto mb-2">🌈</div>
+                                <p class="text-xs text-slate-500">社交达人</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="achievement-badge locked bg-slate-700 mx-auto mb-2">🔮</div>
+                                <p class="text-xs text-slate-500">预知梦者</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="achievement-badge locked bg-slate-700 mx-auto mb-2">👑</div>
+                                <p class="text-xs text-slate-500">梦境大师</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 梦境词云 -->
+                    <div class="glass-card p-6 rounded-2xl">
+                        <h3 class="font-semibold mb-4">☁️ 我的梦境词云</h3>
+                        <div class="text-center" id="word-cloud">
+                            <span class="word-cloud-item text-3xl text-indigo-400 bg-indigo-500/20">飞翔</span>
+                            <span class="word-cloud-item text-2xl text-purple-400 bg-purple-500/20">天空</span>
+                            <span class="word-cloud-item text-xl text-pink-400 bg-pink-500/20">水</span>
+                            <span class="word-cloud-item text-lg text-emerald-400 bg-emerald-500/20">追逐</span>
+                            <span class="word-cloud-item text-base text-amber-400 bg-amber-500/20">坠落</span>
+                            <span class="word-cloud-item text-sm text-cyan-400 bg-cyan-500/20">家人</span>
+                            <span class="word-cloud-item text-lg text-rose-400 bg-rose-500/20">城市</span>
+                            <span class="word-cloud-item text-xl text-violet-400 bg-violet-500/20">海洋</span>
+                        </div>
+                    </div>
+
+                    <!-- 设置 -->
+                    <div class="glass-card p-6 rounded-2xl space-y-4">
+                        <h3 class="font-semibold">⚙️ 设置</h3>
+                        <div class="flex items-center justify-between py-3 border-b border-slate-700/50">
+                            <div>
+                                <p class="font-medium">推送通知</p>
+                                <p class="text-xs text-slate-400">接收睡前提醒和社区互动通知</p>
+                            </div>
+                            <button onclick="toggleNotification()" class="w-12 h-6 rounded-full bg-indigo-500 relative transition" id="notification-toggle">
+                                <span class="absolute right-1 top-1 w-4 h-4 rounded-full bg-white transition-all"></span>
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between py-3 border-b border-slate-700/50">
+                            <div>
+                                <p class="font-medium">深色模式</p>
+                                <p class="text-xs text-slate-400">切换浅色/深色主题</p>
+                            </div>
+                            <button onclick="toggleTheme()" class="w-12 h-6 rounded-full bg-indigo-500 relative transition" id="theme-toggle">
+                                <span class="absolute right-1 top-1 w-4 h-4 rounded-full bg-white transition-all"></span>
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between py-3">
+                            <div>
+                                <p class="font-medium">睡前提醒</p>
+                                <p class="text-xs text-slate-400">每天提醒记录梦境</p>
+                            </div>
+                            <input type="time" value="22:00" class="dream-input px-3 py-1 rounded-lg text-sm" id="reminder-time">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <a href="settings.html" class="flex-1 py-4 rounded-2xl bg-slate-800/60 hover:bg-slate-800/80 transition font-semibold text-center">⚙️ 更多设置</a>
+                        <a href="stats.html" class="flex-1 py-4 rounded-2xl bg-slate-800/60 hover:bg-slate-800/80 transition font-semibold text-center">📊 数据报告</a>
+                    </div>
+                    <button onclick="logout()" class="w-full py-4 rounded-2xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition font-semibold text-lg">
+                        🚪 退出登录
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        // 数据存储
+        let dreams = JSON.parse(localStorage.getItem('dreamsync-dreams')) || [
+            { id: 1, title: '飞翔在星空之城', content: '我在一座漂浮的城市中飞翔，星星触手可及...', type: 'lucid', clarity: 9, emotion: '愉悦', date: '2小时前', likes: 128, tags: ['飞翔', '天空'] },
+            { id: 2, title: '深海探险', content: '潜入深海，发现了一座发光的水下宫殿...', type: 'normal', clarity: 7, emotion: '平静', date: '昨晚', likes: 89, tags: ['水', '海洋'] },
+            { id: 3, title: '时间倒流', content: '再次梦到这个场景，这次我改变了结局...', type: 'recurring', clarity: 8, emotion: '困惑', date: '前天', likes: 56, tags: ['重复', '时间'] }
+        ];
+
+        let rooms = JSON.parse(localStorage.getItem('dreamsync-rooms')) || [
+            { id: 1, name: '清醒梦探索室', desc: '一起练习清醒梦技巧，分享控梦经验', theme: 'lucid', participants: 3, max: 5, status: 'active', locked: false, messages: [] },
+            { id: 2, name: '噩梦疗愈空间', desc: '安全的分享噩梦，互相支持和解读', theme: 'heal', participants: 2, max: 4, status: 'active', locked: false, messages: [] },
+            { id: 3, name: '星空梦境同步', desc: '今晚一起梦见星空，设置共同意图', theme: 'star', participants: 4, max: 6, status: 'waiting', locked: true, messages: [] }
+        ];
+
+        let communityDreams = JSON.parse(localStorage.getItem('dreamsync-community')) || [
+            { id: 1, author: '星空漫步者', avatar: '🌙', title: '在彩虹瀑布中游泳', content: '我梦见自己站在一道巨大的彩虹瀑布前，水流是温暖的...', type: 'lucid', likes: 128, comments: 23, tags: ['水', '彩虹'] },
+            { id: 2, author: '梦境旅人', avatar: '✨', title: '时间倒流的图书馆', content: '我发现了一座古老的图书馆，每本书打开后，我都能进入书中的世界...', type: 'normal', likes: 89, comments: 15, tags: ['书籍', '时间'] },
+            { id: 3, author: '梦游者', avatar: '🌌', title: '与已故祖母的对话', content: '在梦中，祖母坐在她最喜欢的摇椅上，告诉我不要担心...', type: 'prophetic', likes: 256, comments: 45, tags: ['家人', '预知'] }
+        ];
+
+        let currentTab = 'dashboard';
+        let theme = localStorage.getItem('dreamsync-theme') || 'dark';
+        let currentRoom = null;
+
+        // 初始化
+        function init() {
+            setTheme(theme);
+            renderCalendar();
+            renderEmotionTrend();
+            renderDreams();
+            renderCommunity();
+            renderRooms();
+            updateStats();
+            switchTab('dashboard');
+            generateStars();
+            
+            // 检查用户登录状态
+            if (window.auth && window.auth.isLoggedIn()) {
+                const user = window.auth.getUser();
+                if (user) {
+                    document.getElementById('username-display').textContent = user.username;
+                    document.getElementById('profileName').value = user.username;
+                    if (user.avatar) {
+                        document.getElementById('user-avatar').textContent = user.avatar;
+                    }
+                }
+            }
+        }
+
+        // 生成星空
+        function generateStars() {
+            const container = document.getElementById('stars');
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                container.appendChild(star);
+            }
+        }
+
+        // 渲染日历
+        function renderCalendar() {
+            const container = document.getElementById('calendar');
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            // 模拟有梦境的日期
+            const dreamDays = [1, 3, 5, 8, 12, 15, 18, 22, 25, 28];
+            
+            let html = '';
+            
+            // 填充空白
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div class="calendar-day text-slate-600"></div>';
+            }
+            
+            // 填充日期
+            for (let day = 1; day <= daysInMonth; day++) {
+                const isToday = day === today.getDate();
+                const hasDream = dreamDays.includes(day);
+                html += `<div class="calendar-day ${isToday ? 'today' : ''} ${hasDream ? 'has-dream' : 'text-slate-400'}">${day}</div>`;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // 渲染情绪趋势
+        function renderEmotionTrend() {
+            const container = document.getElementById('emotion-trend');
+            const emotions = [
+                { name: '愉悦', percentage: 35, color: 'from-emerald-500 to-teal-500' },
+                { name: '平静', percentage: 28, color: 'from-blue-500 to-cyan-500' },
+                { name: '焦虑', percentage: 20, color: 'from-amber-500 to-orange-500' },
+                { name: '兴奋', percentage: 12, color: 'from-pink-500 to-rose-500' },
+                { name: '恐惧', percentage: 5, color: 'from-red-500 to-rose-600' }
+            ];
+            
+            container.innerHTML = emotions.map(e => `
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-300">${e.name}</span>
+                        <span class="text-slate-400">${e.percentage}%</span>
+                    </div>
+                    <div class="h-2 bg-slate-700/50 rounded-full overflow-hidden">
+                        <div class="emotion-bar h-full bg-gradient-to-r ${e.color}" style="width: ${e.percentage}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 设置主题
+        function setTheme(t) {
+            theme = t;
+            document.body.className = t + ' theme-transition';
+            document.getElementById('theme-btn').textContent = t === 'dark' ? '🌙' : '☀️';
+            localStorage.setItem('dreamsync-theme', t);
+        }
+
+        // 切换主题
+        function toggleTheme() {
+            setTheme(theme === 'dark' ? 'light' : 'dark');
+        }
+
+        // 切换标签
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // 页面过渡动画
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('page-enter-active');
+            });
+            
+            const activeContent = document.getElementById(tab);
+            activeContent.classList.remove('hidden');
+            activeContent.classList.add('page-enter');
+            
+            setTimeout(() => {
+                activeContent.classList.add('page-enter-active');
+            }, 10);
+            
+            // 更新标签按钮状态
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
+        }
+
+        // 获取类型样式
+        function getTypeClass(type) {
+            const classes = {
+                lucid: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
+                nightmare: 'bg-red-500/20 text-red-400 border border-red-500/30',
+                recurring: 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+                prophetic: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+                normal: 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+            };
+            return classes[type] || classes.normal;
+        }
+
+        // 获取类型标签
+        function getTypeLabel(type) {
+            const labels = {
+                lucid: '⚡ 清醒梦',
+                nightmare: '😱 噩梦',
+                recurring: '🔄 重复梦',
+                prophetic: '🔮 预知梦',
+                normal: '🌙 普通梦'
+            };
+            return labels[type] || '普通梦';
+        }
+
+        // 渲染梦境列表
+        function renderDreams() {
+            const list = document.getElementById('recentDreamsList');
+            list.innerHTML = dreams.slice(0, 5).map(dream => `
+                <div class="glass-card p-4 rounded-xl cursor-pointer" onclick="viewDream(${dream.id})">
+                    <div class="flex items-start justify-between mb-2">
+                        <h4 class="font-semibold">${dream.title}</h4>
+                        <span class="px-2 py-1 rounded-full text-xs ${getTypeClass(dream.type)}">${getTypeLabel(dream.type)}</span>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-2 line-clamp-2">${dream.content}</p>
+                    <div class="flex items-center justify-between text-xs text-slate-500">
+                        <span>${dream.date}</span>
+                        <span>清晰度: ${dream.clarity}/10</span>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('total-dreams-count').textContent = `共 ${dreams.length} 个梦境`;
+        }
+
+        // 渲染社区
+        function renderCommunity(filter = 'all') {
+            const list = document.getElementById('communityList');
+            let filtered = filter === 'all' ? communityDreams : communityDreams.filter(d => d.type === filter);
+            
+            list.innerHTML = filtered.map(dream => `
+                <div class="glass-card p-5 rounded-2xl">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xl">${dream.avatar}</div>
+                            <div>
+                                <p class="font-semibold">${dream.author}</p>
+                                <p class="text-xs text-slate-400">2小时前</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs ${getTypeClass(dream.type)}">${getTypeLabel(dream.type)}</span>
+                    </div>
+                    <h4 class="font-semibold mb-2">${dream.title}</h4>
+                    <p class="text-sm text-slate-400 mb-3 line-clamp-3">${dream.content}</p>
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        ${dream.tags.map(tag => `<span class="text-xs bg-slate-700/50 px-2 py-1 rounded-full text-slate-400">#${tag}</span>`).join('')}
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <button onclick="toggleLike(${dream.id}, 'community')" class="flex items-center space-x-1 text-sm text-slate-400 hover:text-red-400 transition">
+                                <span>❤️</span>
+                                <span>${dream.likes}</span>
+                            </button>
+                            <button onclick="showComments(${dream.id})" class="flex items-center space-x-1 text-sm text-slate-400 hover:text-indigo-400 transition">
+                                <span>💬</span>
+                                <span>${dream.comments}</span>
+                            </button>
+                        </div>
+                        <button onclick="shareDream(${dream.id})" class="text-sm text-slate-400 hover:text-indigo-400 transition">🔗 分享</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 渲染房间列表
+        function renderRooms() {
+            const list = document.getElementById('roomsList');
+            const emojis = { lucid: '⚡', heal: '🌿', star: '⭐' };
+            const colors = {
+                lucid: 'from-yellow-500 to-orange-500',
+                heal: 'from-emerald-500 to-teal-500',
+                star: 'from-indigo-500 to-purple-500'
+            };
+            
+            list.innerHTML = rooms.map(room => `
+                <div class="glass-card p-6 rounded-2xl">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br ${colors[room.theme]} flex items-center justify-center text-2xl">${emojis[room.theme]}</div>
+                        <span class="px-2 py-1 rounded-full text-xs ${room.locked ? 'bg-slate-500/20 text-slate-400' : 'bg-emerald-500/20 text-emerald-400'}">
+                            ${room.locked ? '🔒 私密' : room.status === 'active' ? '🟢 进行中' : '⏳ 待开始'}
+                        </span>
+                    </div>
+                    <h4 class="font-semibold mb-2">${room.name}</h4>
+                    <p class="text-sm text-slate-400 mb-4 line-clamp-2">${room.desc}</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-400">👥 ${room.participants}/${room.max}</span>
+                        <button onclick="joinRoom(${room.id})" class="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 transition text-white text-sm font-medium ${room.participants >= room.max ? 'opacity-50 cursor-not-allowed' : ''}" ${room.participants >= room.max ? 'disabled' : ''}>
+                            ${room.participants >= room.max ? '已满' : '加入'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 添加标签
+        function addTag(tag) {
+            const input = document.getElementById('dreamTags');
+            const currentTags = input.value.split(',').map(t => t.trim()).filter(t => t);
+            if (!currentTags.includes(tag)) {
+                currentTags.push(tag);
+                input.value = currentTags.join(', ');
+            }
+        }
+
+        // 保存梦境
+        function saveDream() {
+            const title = document.getElementById('dreamTitle').value.trim();
+            const content = document.getElementById('dreamContent').value.trim();
+            const type = document.getElementById('dreamType').value;
+            const emotion = document.getElementById('dreamEmotion').value;
+            const clarity = parseInt(document.getElementById('dreamClarity').value);
+            const tags = document.getElementById('dreamTags').value.split(',').map(t => t.trim()).filter(t => t);
+
+            if (!title || !content) {
+                showToast('请填写梦境标题和内容！', 'error');
+                return;
+            }
+
+            const dream = {
+                id: Date.now(),
+                title, content, type, emotion, clarity, tags,
+                date: '刚刚',
+                likes: 0,
+                comments: 0
+            };
+
+            dreams.unshift(dream);
+            localStorage.setItem('dreamsync-dreams', JSON.stringify(dreams));
+            
+            // 清空表单
+            document.getElementById('dreamTitle').value = '';
+            document.getElementById('dreamContent').value = '';
+            document.getElementById('dreamTags').value = '';
+            document.getElementById('dreamClarity').value = 5;
+            document.getElementById('clarityValue').textContent = 5;
+
+            showToast('✅ 梦境已保存！', 'success');
+            triggerConfetti();
+            renderDreams();
+            renderCalendar();
+            updateStats();
+            switchTab('dashboard');
+        }
+
+        // 加入房间
+        function joinRoom(id) {
+            const room = rooms.find(r => r.id === id);
+            if (room && room.participants < room.max) {
+                currentRoom = room;
+                room.participants++;
+                localStorage.setItem('dreamsync-rooms', JSON.stringify(rooms));
+                
+                document.getElementById('room-chat').classList.remove('hidden');
+                document.getElementById('current-room-name').textContent = room.name;
+                document.getElementById('chat-messages').innerHTML = `
+                    <div class="chat-bubble received">欢迎来到「${room.name}」！</div>
+                `;
+                
+                renderRooms();
+                showToast(`已加入「${room.name}」`, 'success');
+            }
+        }
+
+        // 离开房间
+        function leaveRoom() {
+            if (currentRoom) {
+                currentRoom.participants--;
+                localStorage.setItem('dreamsync-rooms', JSON.stringify(rooms));
+                currentRoom = null;
+                document.getElementById('room-chat').classList.add('hidden');
+                renderRooms();
+                showToast('已离开房间', 'success');
+            }
+        }
+
+        // 发送消息
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message || !currentRoom) return;
+            
+            const container = document.getElementById('chat-messages');
+            container.innerHTML += `<div class="chat-bubble sent">${message}</div>`;
+            container.scrollTop = container.scrollHeight;
+            input.value = '';
+            
+            // 模拟回复
+            setTimeout(() => {
+                const replies = [
+                    '这个梦境很有意思！',
+                    '我也做过类似的梦 😊',
+                    '你在梦里感觉怎么样？',
+                    '这让我想起了我的一个梦...',
+                    '很有深度的梦境 ✨'
+                ];
+                const reply = replies[Math.floor(Math.random() * replies.length)];
+                container.innerHTML += `<div class="chat-bubble received">${reply}</div>`;
+                container.scrollTop = container.scrollHeight;
+            }, 1000 + Math.random() * 1000);
+        }
+
+        // 创建房间
+        function showCreateRoomModal() {
+            const name = prompt('房间名称：');
+            if (!name) return;
+            const desc = prompt('房间描述：') || '';
+            const isPrivate = confirm('是否设置为私密房间？');
+            
+            rooms.unshift({
+                id: Date.now(),
+                name,
+                desc,
+                theme: 'star',
+                participants: 1,
+                max: 5,
+                status: 'waiting',
+                locked: isPrivate,
+                messages: []
+            });
+            
+            localStorage.setItem('dreamsync-rooms', JSON.stringify(rooms));
+            renderRooms();
+            showToast('✅ 房间创建成功！', 'success');
+        }
+
+        // 搜索社区
+        function searchCommunity(query) {
+            if (!query) {
+                renderCommunity();
+                return;
+            }
+            
+            const filtered = communityDreams.filter(d => 
+                d.title.includes(query) || 
+                d.content.includes(query) ||
+                d.tags.some(t => t.includes(query))
+            );
+            
+            const list = document.getElementById('communityList');
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-400 py-8">未找到相关梦境</div>';
+            } else {
+                // 重新渲染过滤后的结果
+                communityDreams = filtered;
+                renderCommunity();
+                communityDreams = JSON.parse(localStorage.getItem('dreamsync-community')) || communityDreams;
+            }
+        }
+
+        // 筛选社区
+        function filterCommunity(value) {
+            renderCommunity(value);
+        }
+
+        // 查看梦境详情
+        function viewDream(id) {
+            const dream = dreams.find(d => d.id === id);
+            if (dream) {
+                alert(`📖 ${dream.title}\n\n${dream.content}\n\n类型: ${getTypeLabel(dream.type)}\n情绪: ${dream.emotion}\n清晰度: ${dream.clarity}/10\n标签: ${dream.tags.join(', ')}`);
+            }
+        }
+
+        // 点赞
+        function toggleLike(id, source) {
+            showToast('❤️ 点赞成功！', 'success');
+        }
+
+        // 显示评论
+        function showComments(id) {
+            showToast('💬 评论功能开发中...', 'success');
+        }
+
+        // 分享
+        function shareDream(id) {
+            showToast('🔗 分享链接已复制！', 'success');
+        }
+
+        // 切换通知
+        function toggleNotification() {
+            const toggle = document.getElementById('notification-toggle');
+            const isActive = toggle.classList.toggle('bg-indigo-500');
+            toggle.classList.toggle('bg-slate-600', !isActive);
+            showToast(isActive ? '🔔 通知已开启' : '🔕 通知已关闭', 'success');
+        }
+
+        // 显示通知
+        function showNotifications() {
+            showToast('🔔 暂无新通知', 'success');
+        }
+
+        // 保存个人资料
+        function saveProfile() {
+            const name = document.getElementById('profileName').value;
+            const bio = document.getElementById('profileBio').value;
+            
+            localStorage.setItem('dreamsync-profile', JSON.stringify({ name, bio }));
+            
+            if (window.auth) {
+                window.auth.updateProfile({ username: name, bio });
+            }
+            
+            document.getElementById('username-display').textContent = name;
+            showToast('✅ 个人资料已保存！', 'success');
+        }
+
+        // 更新统计
+        function updateStats() {
+            const total = dreams.length;
+            const lucid = dreams.filter(d => d.type === 'lucid').length;
+            const resonance = communityDreams.length;
+            
+            document.getElementById('totalDreams').textContent = total;
+            document.getElementById('lucidDreams').textContent = lucid;
+            document.getElementById('resonanceCount').textContent = resonance;
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statLucid').textContent = lucid;
+            document.getElementById('statResonance').textContent = resonance;
+        }
+
+        // 退出登录
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                if (window.auth) {
+                    window.auth.logout();
+                }
+                showToast('已退出登录', 'success');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1000);
+            }
+        }
+
+        // Toast 通知
+        function showToast(message, type = 'success') {
+            let toast = document.querySelector('.toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.className = 'toast';
+                document.body.appendChild(toast);
+            }
+
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 庆祝动画
+        function triggerConfetti() {
+            const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+            
+            for (let i = 0; i < 30; i++) {
+                const confetti = document.createElement('div');
+                confetti.style.cssText = `
+                    position: fixed;
+                    width: 10px;
+                    height: 10px;
+                    background: ${colors[Math.floor(Math.random() * colors.length)]};
+                    left: ${Math.random() * 100}vw;
+                    top: -10px;
+                    border-radius: ${Math.random() > 0.5 ? '50%' : '0'};
+                    pointer-events: none;
+                    z-index: 9999;
+                    animation: confetti-fall 3s ease-out forwards;
+                `;
+                document.body.appendChild(confetti);
+
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+        // 添加 CSS 动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes confetti-fall {
+                0% {
+                    opacity: 1;
+                    transform: translateY(0) rotate(0deg) scale(1);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translateY(100vh) rotate(720deg) scale(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>
