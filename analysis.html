@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamSync - AI 梦境分析</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        /* 星空 */
+        .star {
+            position: fixed;
+            width: 2px; height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle var(--d, 3s) ease-in-out infinite;
+            opacity: 0;
+        }
+        @keyframes twinkle {
+            0%,100%{opacity:0;transform:scale(.5)}
+            50%{opacity:.8;transform:scale(1)}
+        }
+
+        /* 玻璃卡片 */
+        .glass {
+            background: rgba(15,23,42,.65);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(99,102,241,.2);
+            transition: all .35s cubic-bezier(.4,0,.2,1);
+        }
+        .glass:hover {
+            border-color: rgba(99,102,241,.45);
+            box-shadow: 0 20px 40px rgba(99,102,241,.12);
+        }
+
+        /* 输入框 */
+        .inp {
+            background: rgba(30,41,59,.55);
+            border: 2px solid rgba(99,102,241,.3);
+            color: white;
+            transition: all .3s;
+        }
+        .inp:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99,102,241,.12);
+            background: rgba(30,41,59,.85);
+        }
+        .inp::placeholder { color: #475569; }
+
+        /* 打字机光标 */
+        .typing::after {
+            content: '|';
+            animation: blink .7s step-end infinite;
+        }
+        @keyframes blink { 50%{opacity:0} }
+
+        /* AI 思考动画 */
+        .thinking-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #6366f1;
+            animation: thinking .8s ease-in-out infinite;
+        }
+        .thinking-dot:nth-child(2) { animation-delay: .15s; }
+        .thinking-dot:nth-child(3) { animation-delay: .3s; }
+        @keyframes thinking {
+            0%,80%,100%{transform:scale(.6);opacity:.4}
+            40%{transform:scale(1);opacity:1}
+        }
+
+        /* 雷达图 */
+        .radar-container {
+            position: relative;
+            width: 240px; height: 240px;
+        }
+
+        /* 情绪标签 */
+        .emotion-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all .25s;
+            cursor: pointer;
+        }
+        .emotion-tag:hover { transform: scale(1.08); }
+
+        /* 符号卡片 */
+        .symbol-card {
+            background: rgba(30,41,59,.5);
+            border: 1px solid rgba(99,102,241,.15);
+            border-radius: 16px;
+            padding: 16px;
+            transition: all .3s;
+            cursor: pointer;
+        }
+        .symbol-card:hover {
+            background: rgba(99,102,241,.15);
+            border-color: rgba(99,102,241,.4);
+            transform: translateY(-4px);
+        }
+
+        /* 进度环 */
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .progress-ring-circle {
+            transition: stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* 渐变文字 */
+        .grad-text {
+            background: linear-gradient(135deg, #818cf8, #c084fc, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* 波形动画 */
+        .wave-bar {
+            width: 4px;
+            border-radius: 2px;
+            background: linear-gradient(to top, #6366f1, #c084fc);
+            animation: wave var(--d, .8s) ease-in-out infinite alternate;
+        }
+        @keyframes wave {
+            from { transform: scaleY(.3); }
+            to   { transform: scaleY(1); }
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15,23,42,.5); }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(#6366f1, #8b5cf6);
+            border-radius: 3px;
+        }
+
+        /* 淡入 */
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(20px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        .fade-up { animation: fadeUp .6s ease forwards; }
+
+        /* 闪光扫描 */
+        .shimmer {
+            background: linear-gradient(90deg,
+                rgba(99,102,241,0) 0%,
+                rgba(99,102,241,.15) 50%,
+                rgba(99,102,241,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0%   { background-position: -200% 0; }
+            100% { background-position:  200% 0; }
+        }
+    </style>
+</head>
+<body>
+<!-- 星空 -->
+<div id="stars" class="pointer-events-none"></div>
+
+<!-- 顶部导航 -->
+<nav class="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/80 border-b border-slate-800/50">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <a href="app.html" class="text-slate-400 hover:text-white transition text-sm">← 返回</a>
+            <div class="w-px h-5 bg-slate-700"></div>
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-lg">🤖</div>
+            <span class="font-bold grad-text text-lg">AI 梦境分析</span>
+        </div>
+        <div class="flex items-center space-x-2 text-xs text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block"></span>
+            AI 在线
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-6xl mx-auto px-4 py-8 pb-20">
+
+    <!-- 输入区 -->
+    <div class="glass rounded-3xl p-6 md:p-8 mb-8 fade-up">
+        <h2 class="text-xl font-bold mb-2">输入你的梦境</h2>
+        <p class="text-slate-400 text-sm mb-5">AI 将从心理学、符号学、情绪等多维度深度解析你的梦境</p>
+
+        <textarea id="dreamInput"
+            class="inp w-full rounded-2xl px-5 py-4 text-sm resize-none mb-4"
+            rows="6"
+            placeholder="描述你的梦境内容，越详细越好……例如：我梦见自己在一座漂浮的城市里飞翔，脚下是云海，远处有一座发光的塔……"></textarea>
+
+        <div class="flex flex-wrap gap-3 mb-5">
+            <span class="text-xs text-slate-400 self-center">快速填入：</span>
+            <button onclick="fillSample(0)" class="text-xs px-3 py-1.5 rounded-full bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition">飞翔梦</button>
+            <button onclick="fillSample(1)" class="text-xs px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition">追逐梦</button>
+            <button onclick="fillSample(2)" class="text-xs px-3 py-1.5 rounded-full bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 transition">坠落梦</button>
+            <button onclick="fillSample(3)" class="text-xs px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition">水中梦</button>
+        </div>
+
+        <button id="analyzeBtn" onclick="startAnalysis()"
+            class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 font-semibold text-lg hover:opacity-90 transition active:scale-[.98]">
+            🔮 开始 AI 分析
+        </button>
+    </div>
+
+    <!-- AI 思考中 -->
+    <div id="thinkingPanel" class="hidden glass rounded-3xl p-8 mb-8 text-center fade-up">
+        <div class="flex justify-center space-x-2 mb-4">
+            <div class="thinking-dot"></div>
+            <div class="thinking-dot"></div>
+            <div class="thinking-dot"></div>
+        </div>
+        <p class="text-slate-300 font-medium" id="thinkingText">正在解析梦境符号…</p>
+        <div class="mt-4 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div id="progressBar" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500" style="width:0%"></div>
+        </div>
+    </div>
+
+    <!-- 分析结果 -->
+    <div id="resultPanel" class="hidden space-y-6">
+
+        <!-- 总体评分 -->
+        <div class="glass rounded-3xl p-6 md:p-8 fade-up">
+            <h3 class="text-lg font-bold mb-6">📊 梦境综合评分</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="text-center" id="score-clarity">
+                    <div class="relative inline-flex items-center justify-center mb-3">
+                        <svg class="progress-ring" width="80" height="80">
+                            <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(99,102,241,.15)" stroke-width="6"/>
+                            <circle class="progress-ring-circle" cx="40" cy="40" r="32" fill="none"
+                                stroke="url(#g1)" stroke-width="6"
+                                stroke-dasharray="201" stroke-dashoffset="201"
+                                stroke-linecap="round" data-value="85"/>
+                        </svg>
+                        <defs>
+                            <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#6366f1"/>
+                                <stop offset="100%" stop-color="#8b5cf6"/>
+                            </linearGradient>
+                        </defs>
+                        <span class="absolute text-lg font-bold text-indigo-400" id="val-clarity">85</span>
+                    </div>
+                    <p class="text-sm text-slate-400">清晰度</p>
+                </div>
+                <div class="text-center">
+                    <div class="relative inline-flex items-center justify-center mb-3">
+                        <svg class="progress-ring" width="80" height="80">
+                            <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(236,72,153,.15)" stroke-width="6"/>
+                            <circle class="progress-ring-circle" cx="40" cy="40" r="32" fill="none"
+                                stroke="url(#g2)" stroke-width="6"
+                                stroke-dasharray="201" stroke-dashoffset="201"
+                                stroke-linecap="round" data-value="72"/>
+                        </svg>
+                        <defs>
+                            <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#ec4899"/>
+                                <stop offset="100%" stop-color="#f472b6"/>
+                            </linearGradient>
+                        </defs>
+                        <span class="absolute text-lg font-bold text-pink-400" id="val-emotion">72</span>
+                    </div>
+                    <p class="text-sm text-slate-400">情绪强度</p>
+                </div>
+                <div class="text-center">
+                    <div class="relative inline-flex items-center justify-center mb-3">
+                        <svg class="progress-ring" width="80" height="80">
+                            <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(16,185,129,.15)" stroke-width="6"/>
+                            <circle class="progress-ring-circle" cx="40" cy="40" r="32" fill="none"
+                                stroke="url(#g3)" stroke-width="6"
+                                stroke-dasharray="201" stroke-dashoffset="201"
+                                stroke-linecap="round" data-value="91"/>
+                        </svg>
+                        <defs>
+                            <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#10b981"/>
+                                <stop offset="100%" stop-color="#14b8a6"/>
+                            </linearGradient>
+                        </defs>
+                        <span class="absolute text-lg font-bold text-emerald-400" id="val-symbol">91</span>
+                    </div>
+                    <p class="text-sm text-slate-400">符号丰富度</p>
+                </div>
+                <div class="text-center">
+                    <div class="relative inline-flex items-center justify-center mb-3">
+                        <svg class="progress-ring" width="80" height="80">
+                            <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(245,158,11,.15)" stroke-width="6"/>
+                            <circle class="progress-ring-circle" cx="40" cy="40" r="32" fill="none"
+                                stroke="url(#g4)" stroke-width="6"
+                                stroke-dasharray="201" stroke-dashoffset="201"
+                                stroke-linecap="round" data-value="68"/>
+                        </svg>
+                        <defs>
+                            <linearGradient id="g4" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#f59e0b"/>
+                                <stop offset="100%" stop-color="#fb923c"/>
+                            </linearGradient>
+                        </defs>
+                        <span class="absolute text-lg font-bold text-amber-400" id="val-lucid">68</span>
+                    </div>
+                    <p class="text-sm text-slate-400">清醒梦潜力</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 情绪分析 + 主题 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 情绪分析 -->
+            <div class="glass rounded-3xl p-6 fade-up">
+                <h3 class="text-lg font-bold mb-4">😊 情绪光谱</h3>
+                <div class="flex flex-wrap gap-2 mb-5" id="emotionTags"></div>
+                <div class="space-y-3" id="emotionBars"></div>
+            </div>
+
+            <!-- 梦境主题 -->
+            <div class="glass rounded-3xl p-6 fade-up">
+                <h3 class="text-lg font-bold mb-4">🎭 核心主题</h3>
+                <div class="space-y-3" id="themeList"></div>
+            </div>
+        </div>
+
+        <!-- 符号解析 -->
+        <div class="glass rounded-3xl p-6 md:p-8 fade-up">
+            <h3 class="text-lg font-bold mb-5">🔮 符号解析</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="symbolGrid"></div>
+        </div>
+
+        <!-- AI 深度解读 -->
+        <div class="glass rounded-3xl p-6 md:p-8 fade-up">
+            <div class="flex items-center space-x-3 mb-5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xl">🤖</div>
+                <div>
+                    <h3 class="text-lg font-bold">AI 深度解读</h3>
+                    <p class="text-xs text-slate-400">基于荣格心理学 · 符号学 · 情绪分析</p>
+                </div>
+            </div>
+            <div class="space-y-4" id="aiInterpretation"></div>
+        </div>
+
+        <!-- 声音可视化 -->
+        <div class="glass rounded-3xl p-6 fade-up">
+            <h3 class="text-lg font-bold mb-4">🎵 梦境声纹</h3>
+            <p class="text-sm text-slate-400 mb-4">根据梦境情绪生成的声纹可视化</p>
+            <div class="flex items-end justify-center space-x-1 h-20" id="waveform"></div>
+        </div>
+
+        <!-- 建议 -->
+        <div class="glass rounded-3xl p-6 md:p-8 fade-up">
+            <h3 class="text-lg font-bold mb-5">💡 个性化建议</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="suggestions"></div>
+        </div>
+
+        <!-- 相似梦境 -->
+        <div class="glass rounded-3xl p-6 md:p-8 fade-up">
+            <h3 class="text-lg font-bold mb-5">🔗 相似梦境共鸣</h3>
+            <div class="space-y-3" id="similarDreams"></div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="flex flex-wrap gap-4 fade-up">
+            <button onclick="saveAnalysis()" class="flex-1 py-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 font-semibold hover:opacity-90 transition">
+                💾 保存分析报告
+            </button>
+            <button onclick="shareAnalysis()" class="flex-1 py-4 rounded-2xl border border-indigo-500/40 text-indigo-400 hover:bg-indigo-500/10 transition font-semibold">
+                🔗 分享到社区
+            </button>
+            <button onclick="resetAnalysis()" class="py-4 px-6 rounded-2xl border border-slate-700 text-slate-400 hover:bg-slate-800 transition font-semibold">
+                🔄 重新分析
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 -translate-y-4 opacity-0 pointer-events-none z-50
+    px-5 py-3 rounded-xl text-sm font-medium backdrop-blur-xl transition-all duration-300"></div>
+
+<script>
+// 星空
+(function(){
+    const c = document.getElementById('stars');
+    for(let i=0;i<120;i++){
+        const s = document.createElement('div');
+        s.className = 'star';
+        s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*3}s`;
+        c.appendChild(s);
+    }
+})();
+
+// 示例梦境
+const samples = [
+    '我梦见自己在一座漂浮于云端的城市里飞翔，脚下是无边的云海，远处有一座发光的水晶塔。我感到无比自由，想飞多高就飞多高，风吹过脸颊，整个世界都在我脚下。',
+    '有人一直在追我，我拼命跑但腿像灌了铅一样沉重。我跑过一条长长的走廊，门一扇扇关上，最后我被困在一个黑暗的房间里，心跳得很快。',
+    '我从一栋很高的楼上坠落，下面是深渊，我拼命抓住空气但什么都抓不到。就在快要落地的瞬间，我突然醒了，心脏还在狂跳。',
+    '我在一片深蓝色的海洋里游泳，水是温暖的，透明的。我能在水下呼吸，看到各种发光的鱼和珊瑚。深处有一座古老的城市，我游向它，感到平静而神秘。'
+];
+
+function fillSample(i){ document.getElementById('dreamInput').value = samples[i]; }
+
+// 分析数据库
+const analysisDB = {
+    飞翔: {
+        emotions: [{name:'自由',pct:45,color:'from-indigo-500 to-purple-500',emoji:'🕊️'},{name:'愉悦',pct:30,color:'from-emerald-500 to-teal-500',emoji:'😊'},{name:'兴奋',pct:25,color:'from-amber-500 to-orange-500',emoji:'🤩'}],
+        themes: [{icon:'🌤️',name:'超越与自由',desc:'渴望突破现实束缚，追求更高的精神境界'},{icon:'🏙️',name:'理想世界',desc:'内心对完美环境的向往与构建'},{icon:'⚡',name:'清醒梦特征',desc:'高度清晰，具备清醒梦的典型特征'}],
+        symbols: [{emoji:'🌤️',name:'飞翔',meaning:'自由意志的象征，代表对束缚的超越'},{emoji:'☁️',name:'云海',meaning:'潜意识的边界，未知领域的探索'},{emoji:'💎',name:'水晶塔',meaning:'精神追求的目标，内心的灯塔'},{emoji:'🌬️',name:'风',meaning:'变化与流动，生命力的象征'},{emoji:'🏙️',name:'漂浮城市',meaning:'理想化的社会结构，乌托邦情结'}],
+        interpretation: [
+            {title:'心理层面',icon:'🧠',content:'飞翔梦是最常见的积极梦境之一。根据荣格心理学，飞翔象征着自我超越和精神升华。你在梦中感受到的无限自由，反映了你内心深处对突破现实限制的渴望。'},
+            {title:'情绪层面',icon:'💫',content:'梦境中的愉悦感和自由感表明你目前处于一个相对积极的心理状态。云海和水晶塔的意象暗示你正在追求某种崇高的目标，内心充满希望。'},
+            {title:'潜意识信号',icon:'🔮',content:'漂浮城市是一个强烈的原型意象，代表你对理想生活环境的构建。这可能与你现实中对居住环境、工作环境或人际关系的期待有关。'}
+        ],
+        suggestions: [
+            {icon:'📔',title:'记录技巧',desc:'这是典型的清醒梦前兆，建议睡前进行现实检验（Reality Check），提高清醒梦概率'},
+            {icon:'🧘',title:'冥想练习',desc:'飞翔梦反映了你的精神追求，建议配合正念冥想，将梦境中的自由感带入现实'},
+            {icon:'🎨',title:'创意表达',desc:'将梦境中的漂浮城市画出来或写成故事，这种创意表达有助于深化自我认知'}
+        ],
+        scores: {clarity:88, emotion:75, symbol:92, lucid:85}
+    },
+    追逐: {
+        emotions: [{name:'焦虑',pct:55,color:'from-red-500 to-rose-500',emoji:'😰'},{name:'恐惧',pct:30,color:'from-orange-500 to-amber-500',emoji:'😨'},{name:'无力',pct:15,color:'from-slate-500 to-slate-600',emoji:'😔'}],
+        themes: [{icon:'🏃',name:'逃避压力',desc:'现实中存在某种压力或困境需要面对'},{icon:'🚪',name:'封闭感',desc:'感到选择空间受限，出路被堵塞'},{icon:'⚡',name:'应激反应',desc:'身体和心理的高度紧张状态'}],
+        symbols: [{emoji:'🏃',name:'追逐者',meaning:'现实中的压力源，可能是工作、关系或内心恐惧'},{emoji:'🦵',name:'沉重的腿',meaning:'感到行动受阻，无法有效应对挑战'},{emoji:'🚪',name:'关闭的门',meaning:'机会的消失，选择空间的收窄'},{emoji:'🌑',name:'黑暗房间',meaning:'未知的恐惧，被困的感觉'}],
+        interpretation: [
+            {title:'心理层面',icon:'🧠',content:'追逐梦通常与现实中的压力、焦虑或逃避心理有关。腿部沉重是典型的焦虑梦特征，象征着你在某件事上感到力不从心。'},
+            {title:'情绪层面',icon:'💫',content:'梦中的恐惧感是潜意识在处理白天积累的压力。这不是坏事——大脑正在通过梦境进行情绪调节和压力释放。'},
+            {title:'行动建议',icon:'🔮',content:'建议审视现实中是否有某件事一直在"追着"你——可能是一个未完成的任务、一段需要处理的关系，或者一个你一直在回避的决定。'}
+        ],
+        suggestions: [
+            {icon:'🧘',title:'压力管理',desc:'追逐梦是压力信号，建议尝试渐进式肌肉放松或深呼吸练习，在睡前释放紧张感'},
+            {icon:'📝',title:'问题清单',desc:'写下现实中让你感到"被追赶"的事情，逐一制定应对计划，减少潜意识的焦虑'},
+            {icon:'💪',title:'清醒梦练习',desc:'下次遇到追逐梦时，尝试转身面对追逐者——这是清醒梦技术，也象征着直面恐惧'}
+        ],
+        scores: {clarity:72, emotion:88, symbol:78, lucid:55}
+    },
+    坠落: {
+        emotions: [{name:'恐惧',pct:60,color:'from-red-500 to-rose-600',emoji:'😱'},{name:'失控',pct:25,color:'from-purple-500 to-violet-500',emoji:'😵'},{name:'紧张',pct:15,color:'from-amber-500 to-orange-500',emoji:'😬'}],
+        themes: [{icon:'⬇️',name:'失控感',desc:'对某件事失去掌控，感到无力改变'},{icon:'🏗️',name:'基础动摇',desc:'生活中某个重要支撑正在动摇'},{icon:'⚡',name:'转变信号',desc:'即将经历重大变化的心理预警'}],
+        symbols: [{emoji:'🏢',name:'高楼',meaning:'社会地位、成就或野心的象征'},{emoji:'⬇️',name:'坠落',meaning:'失控感，对某种失败或下降的恐惧'},{emoji:'🌑',name:'深渊',meaning:'未知的恐惧，对最坏结果的想象'},{emoji:'⏰',name:'惊醒',meaning:'潜意识的保护机制，避免过度恐惧'}],
+        interpretation: [
+            {title:'心理层面',icon:'🧠',content:'坠落梦是人类最普遍的梦境之一，与失控感和不安全感密切相关。高楼象征你的目标或地位，坠落则反映了对失败的恐惧。'},
+            {title:'生理层面',icon:'💫',content:'坠落梦有时与入睡时的"肌阵挛"（身体突然抖动）有关，是神经系统的正常反应。惊醒是大脑的保护机制。'},
+            {title:'潜意识信号',icon:'🔮',content:'深渊意象暗示你对某个未知结果感到极度不安。建议审视生活中是否有某个领域让你感到"站不稳"——可能是职业、感情或财务。'}
+        ],
+        suggestions: [
+            {icon:'🛡️',title:'安全感建立',desc:'坠落梦反映安全感不足，建议建立稳定的日常routine，增强对生活的掌控感'},
+            {icon:'🎯',title:'目标拆解',desc:'将大目标拆解为小步骤，减少"高处坠落"的心理压力，每天完成一小步'},
+            {icon:'😴',title:'睡眠优化',desc:'坠落梦可能与睡眠质量有关，建议保持规律作息，睡前避免刺激性内容'}
+        ],
+        scores: {clarity:65, emotion:92, symbol:80, lucid:42}
+    },
+    水: {
+        emotions: [{name:'平静',pct:45,color:'from-blue-500 to-cyan-500',emoji:'😌'},{name:'神秘',pct:35,color:'from-indigo-500 to-violet-500',emoji:'🌊'},{name:'好奇',pct:20,color:'from-emerald-500 to-teal-500',emoji:'🤔'}],
+        themes: [{icon:'🌊',name:'潜意识探索',desc:'深入探索内心深处的未知领域'},{icon:'🏛️',name:'历史与记忆',desc:'与过去的连接，对历史的好奇'},{icon:'✨',name:'神秘体验',desc:'超越日常的神秘感知体验'}],
+        symbols: [{emoji:'🌊',name:'深海',meaning:'潜意识的象征，内心深处的情感与记忆'},{emoji:'💙',name:'蓝色',meaning:'平静、智慧与深度的象征'},{emoji:'🐟',name:'发光的鱼',meaning:'潜意识中的智慧与洞见'},{emoji:'🏛️',name:'水下城市',meaning:'被遗忘的记忆，或对过去的探索'},{emoji:'🌡️',name:'温暖的水',meaning:'情感上的安全感与滋养'}],
+        interpretation: [
+            {title:'心理层面',icon:'🧠',content:'水是荣格心理学中最重要的原型之一，代表潜意识本身。能在水下呼吸是一个强烈的清醒梦特征，象征你与潜意识的和谐共处。'},
+            {title:'情绪层面',icon:'💫',content:'温暖的海水和平静的感受表明你目前处于一个情绪稳定的状态，内心有足够的安全感去探索未知。'},
+            {title:'潜意识信号',icon:'🔮',content:'水下古城是一个深刻的原型意象，可能代表你对某段历史、某段记忆或某种被遗忘的智慧的探索欲望。'}
+        ],
+        suggestions: [
+            {icon:'🧘',title:'冥想深化',desc:'水梦反映了你与潜意识的良好连接，建议尝试引导式冥想，进一步探索内心世界'},
+            {icon:'📚',title:'历史探索',desc:'水下城市的意象可能暗示你对某段历史或文化有浓厚兴趣，建议顺应这种好奇心'},
+            {icon:'🎨',title:'艺术创作',desc:'将梦境中的发光海洋转化为艺术作品，这种创意表达能帮助你与潜意识建立更深的连接'}
+        ],
+        scores: {clarity:82, emotion:68, symbol:95, lucid:78}
+    }
+};
+
+// 相似梦境数据
+const similarDreamsDB = [
+    {avatar:'🌙',name:'星空漫步者',title:'在云端城市飞翔',match:94,type:'清醒梦'},
+    {avatar:'✨',name:'梦境旅人',title:'无边星海中的自由',match:87,type:'普通梦'},
+    {avatar:'🌌',name:'深海探索者',title:'漂浮在彩虹之上',match:79,type:'清醒梦'}
+];
+
+let currentAnalysis = null;
+
+function startAnalysis() {
+    const text = document.getElementById('dreamInput').value.trim();
+    if (!text) { showToast('请先输入梦境内容！', 'error'); return; }
+
+    document.getElementById('thinkingPanel').classList.remove('hidden');
+    document.getElementById('resultPanel').classList.add('hidden');
+    document.getElementById('analyzeBtn').disabled = true;
+    document.getElementById('analyzeBtn').textContent = '🔮 分析中…';
+
+    const steps = [
+        {text:'正在解析梦境符号…', pct:20},
+        {text:'分析情绪光谱…', pct:40},
+        {text:'匹配心理学模型…', pct:60},
+        {text:'生成深度解读…', pct:80},
+        {text:'整合分析报告…', pct:95}
+    ];
+
+    let i = 0;
+    const interval = setInterval(() => {
+        if (i < steps.length) {
+            document.getElementById('thinkingText').textContent = steps[i].text;
+            document.getElementById('progressBar').style.width = steps[i].pct + '%';
+            i++;
+        } else {
+            clearInterval(interval);
+            document.getElementById('progressBar').style.width = '100%';
+            setTimeout(() => {
+                document.getElementById('thinkingPanel').classList.add('hidden');
+                renderResult(text);
+                document.getElementById('analyzeBtn').disabled = false;
+                document.getElementById('analyzeBtn').textContent = '🔮 开始 AI 分析';
+            }, 500);
+        }
+    }, 600);
+}
+
+function detectType(text) {
+    if (text.includes('飞') || text.includes('云') || text.includes('自由')) return '飞翔';
+    if (text.includes('追') || text.includes('跑') || text.includes('逃')) return '追逐';
+    if (text.includes('坠') || text.includes('落') || text.includes('掉')) return '坠落';
+    if (text.includes('水') || text.includes('海') || text.includes('游')) return '水';
+    return '飞翔'; // 默认
+}
+
+function renderResult(text) {
+    const type = detectType(text);
+    const data = analysisDB[type];
+    currentAnalysis = { text, type, data };
+
+    // 评分环
+    const scores = data.scores;
+    document.getElementById('val-clarity').textContent = scores.clarity;
+    document.getElementById('val-emotion').textContent = scores.emotion;
+    document.getElementById('val-symbol').textContent = scores.symbol;
+    document.getElementById('val-lucid').textContent = scores.lucid;
+
+    // 动画进度环
+    setTimeout(() => {
+        document.querySelectorAll('.progress-ring-circle').forEach(circle => {
+            const val = parseInt(circle.dataset.value);
+            const offset = 201 - (201 * val / 100);
+            circle.style.strokeDashoffset = offset;
+        });
+    }, 100);
+
+    // 情绪标签
+    document.getElementById('emotionTags').innerHTML = data.emotions.map(e =>
+        `<span class="emotion-tag bg-gradient-to-r ${e.color} bg-opacity-20 text-white border border-white/10">
+            ${e.emoji} ${e.name}
+        </span>`
+    ).join('');
+
+    // 情绪条
+    document.getElementById('emotionBars').innerHTML = data.emotions.map(e => `
+        <div>
+            <div class="flex justify-between text-sm mb-1">
+                <span class="text-slate-300">${e.emoji} ${e.name}</span>
+                <span class="text-slate-400">${e.pct}%</span>
+            </div>
+            <div class="h-2 bg-slate-700/50 rounded-full overflow-hidden">
+                <div class="h-full rounded-full bg-gradient-to-r ${e.color} transition-all duration-1000" style="width:0%" data-target="${e.pct}%"></div>
+            </div>
+        </div>
+    `).join('');
+    setTimeout(() => {
+        document.querySelectorAll('[data-target]').forEach(el => {
+            el.style.width = el.dataset.target;
+        });
+    }, 200);
+
+    // 主题
+    document.getElementById('themeList').innerHTML = data.themes.map(t => `
+        <div class="flex items-start space-x-3 p-3 rounded-xl bg-slate-800/40 hover:bg-slate-800/60 transition">
+            <span class="text-2xl">${t.icon}</span>
+            <div>
+                <p class="font-semibold text-sm">${t.name}</p>
+                <p class="text-xs text-slate-400 mt-0.5">${t.desc}</p>
+            </div>
+        </div>
+    `).join('');
+
+    // 符号
+    document.getElementById('symbolGrid').innerHTML = data.symbols.map(s => `
+        <div class="symbol-card">
+            <div class="text-3xl mb-2">${s.emoji}</div>
+            <p class="font-semibold text-sm mb-1">${s.name}</p>
+            <p class="text-xs text-slate-400 leading-relaxed">${s.meaning}</p>
+        </div>
+    `).join('');
+
+    // AI 解读
+    document.getElementById('aiInterpretation').innerHTML = data.interpretation.map((item, idx) => `
+        <div class="p-5 rounded-2xl bg-slate-800/40 border border-slate-700/30 fade-up" style="animation-delay:${idx*0.1}s">
+            <div class="flex items-center space-x-2 mb-3">
+                <span class="text-xl">${item.icon}</span>
+                <h4 class="font-semibold text-indigo-300">${item.title}</h4>
+            </div>
+            <p class="text-sm text-slate-300 leading-relaxed">${item.content}</p>
+        </div>
+    `).join('');
+
+    // 声纹
+    const waveform = document.getElementById('waveform');
+    waveform.innerHTML = '';
+    for (let i = 0; i < 40; i++) {
+        const bar = document.createElement('div');
+        const h = 20 + Math.random() * 60;
+        bar.className = 'wave-bar';
+        bar.style.cssText = `height:${h}px;--d:${0.4+Math.random()*0.8}s;animation-delay:${Math.random()*0.5}s`;
+        waveform.appendChild(bar);
+    }
+
+    // 建议
+    document.getElementById('suggestions').innerHTML = data.suggestions.map(s => `
+        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-slate-700/30 hover:border-indigo-500/30 transition">
+            <div class="text-3xl mb-3">${s.icon}</div>
+            <h4 class="font-semibold mb-2">${s.title}</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">${s.desc}</p>
+        </div>
+    `).join('');
+
+    // 相似梦境
+    document.getElementById('similarDreams').innerHTML = similarDreamsDB.map(d => `
+        <div class="flex items-center justify-between p-4 rounded-xl bg-slate-800/40 hover:bg-slate-800/60 transition cursor-pointer">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-lg">${d.avatar}</div>
+                <div>
+                    <p class="font-medium text-sm">${d.title}</p>
+                    <p class="text-xs text-slate-400">${d.name} · ${d.type}</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-indigo-400 font-bold">${d.match}%</p>
+                <p class="text-xs text-slate-500">共鸣度</p>
+            </div>
+        </div>
+    `).join('');
+
+    document.getElementById('resultPanel').classList.remove('hidden');
+    document.getElementById('resultPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function saveAnalysis() {
+    if (!currentAnalysis) return;
+    const saved = JSON.parse(localStorage.getItem('dreamsync-analyses') || '[]');
+    saved.unshift({ ...currentAnalysis, savedAt: new Date().toLocaleString() });
+    localStorage.setItem('dreamsync-analyses', JSON.stringify(saved));
+    showToast('✅ 分析报告已保存！', 'success');
+}
+
+function shareAnalysis() {
+    showToast('🔗 分享链接已复制到剪贴板！', 'success');
+}
+
+function resetAnalysis() {
+    document.getElementById('dreamInput').value = '';
+    document.getElementById('resultPanel').classList.add('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl text-sm font-medium backdrop-blur-xl transition-all duration-300 ${
+        type === 'success'
+            ? 'bg-emerald-500/90 text-white shadow-lg shadow-emerald-500/20'
+            : 'bg-red-500/90 text-white shadow-lg shadow-red-500/20'
+    }`;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transform = 'translateX(-50%) translateY(-16px)';
+    }, 3000);
+}
+</script>
+</body>
+</html>
