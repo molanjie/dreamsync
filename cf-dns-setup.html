@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloudflare DNS 配置工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-2">🔧 Cloudflare DNS 配置工具</h1>
+        <p class="text-gray-400 mb-8">为你的域名设置 DNS 记录指向本机 IP</p>
+
+        <div class="bg-gray-800 rounded-xl p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">1. 当前信息</h2>
+            <div class="space-y-2 text-sm font-mono">
+                <p>📍 你的公网 IP: <span id="currentIP" class="text-green-400">检测中...</span></p>
+                <p>🌐 你的域名: <span class="text-yellow-400">molanjie.dpdns.org</span></p>
+                <p>🖥️ 本机服务器: <span id="serverStatus" class="text-yellow-400">检测中...</span></p>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">2. 配置 Cloudflare DNS</h2>
+            <p class="text-gray-400 text-sm mb-4">
+                你需要提供 Cloudflare 的 API Token 来自动配置 DNS。
+            </p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Cloudflare API Token</label>
+                    <input type="password" id="cfToken" placeholder="cf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" 
+                        class="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-blue-500 outline-none">
+                    <p class="text-xs text-gray-500 mt-1">
+                        在 <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" class="text-blue-400 hover:underline">Cloudflare 官网</a> 创建令牌
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Zone ID (可选)</label>
+                    <input type="text" id="zoneId" placeholder="自动从域名获取" 
+                        class="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-blue-500 outline-none">
+                </div>
+                
+                <button onclick="configureDNS()" id="configBtn"
+                    class="w-full py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 font-semibold">
+                    ⚡ 配置 DNS
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">3. 手动配置 (备选)</h2>
+            <p class="text-gray-400 text-sm mb-4">
+                如果你不想用 API，可以手动在 Cloudflare 设置：
+            </p>
+            <div class="bg-gray-900 rounded-lg p-4 font-mono text-sm">
+                <p class="text-gray-300">类型: <span class="text-green-400">A</span></p>
+                <p class="text-gray-300">名称: <span class="text-green-400">@</span> 或 <span class="text-green-400">molanjie</span></p>
+                <p class="text-gray-300">IPv4 地址: <span id="ipDisplay" class="text-green-400">185.248.187.187</span></p>
+                <p class="text-gray-300">代理状态: <span class="text-yellow-400">仅 DNS (灰色云朵)</span></p>
+            </div>
+            <a href="https://dash.cloudflare.com" target="_blank" 
+                class="inline-block mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm">
+                🌐 打开 Cloudflare DNS 设置
+            </a>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6">
+            <h2 class="text-xl font-semibold mb-4">4. 结果</h2>
+            <div id="result" class="font-mono text-sm bg-gray-900 rounded-lg p-4 min-h-24">
+                配置结果将显示在这里...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取公网IP
+        fetch('https://api.ipify.org')
+            .then(r => r.text())
+            .then(ip => {
+                document.getElementById('currentIP').textContent = ip;
+                document.getElementById('ipDisplay').textContent = ip;
+            })
+            .catch(() => {
+                document.getElementById('currentIP').textContent = '获取失败';
+            });
+
+        // 检查服务器状态
+        fetch('http://localhost:9999')
+            .then(r => { if(r.ok) document.getElementById('serverStatus').textContent = '✅ 运行中 (端口9999)'; })
+            .catch(() => {
+                document.getElementById('serverStatus').textContent = '❌ 未运行，请先启动服务器';
+            });
+
+        async function configureDNS() {
+            const token = document.getElementById('cfToken').value.trim();
+            const zoneId = document.getElementById('zoneId').value.trim();
+            const result = document.getElementById('result');
+            const btn = document.getElementById('configBtn');
+            
+            if (!token) {
+                alert('请输入 Cloudflare API Token');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ 配置中...';
+            result.textContent = '正在获取 Zone 信息...\n';
+
+            try {
+                // 获取 Zone 列表
+                const zones = await fetch('https://api.cloudflare.com/client/v4/zones', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                }).then(r => r.json());
+
+                result.textContent += `找到 ${zones.result.length} 个域名区域\n`;
+
+                // 找到 molanjie.dpdns.org 的 Zone
+                const zone = zones.result.find(z => z.name === 'molanjie.dpdns.org');
+                
+                if (!zone) {
+                    // 尝试部分匹配
+                    const zoneIdInput = document.getElementById('zoneId').value.trim();
+                    if (zoneIdInput) {
+                        result.textContent += '使用手动输入的 Zone ID...\n';
+                    } else {
+                        result.textContent += '❌ 未找到 molanjie.dpdns.org 域名\n';
+                        result.textContent += '请确认域名在您的 Cloudflare 账户中\n';
+                        result.textContent += '或手动输入 Zone ID';
+                        btn.disabled = false;
+                        btn.textContent = '⚡ 配置 DNS';
+                        return;
+                    }
+                }
+
+                const zId = zone ? zone.id : zoneIdInput;
+                result.textContent += `Zone ID: ${zId}\n`;
+
+                // 获取当前公网IP
+                const publicIP = await fetch('https://api.ipify.org').then(r => r.text());
+                result.textContent += `目标 IP: ${publicIP}\n`;
+
+                // 检查现有 A 记录
+                result.textContent += '检查现有 DNS 记录...\n';
+                const records = await fetch(`https://api.cloudflare.com/client/v4/zones/${zId}/dns_records?name=molanjie.dpdns.org&type=A`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                }).then(r => r.json());
+
+                if (records.result.length > 0) {
+                    // 更新现有记录
+                    const record = records.result[0];
+                    result.textContent += `找到现有记录 ID: ${record.id}\n`;
+                    result.textContent += `当前 IP: ${record.content}\n`;
+                    
+                    if (record.content === publicIP) {
+                        result.textContent += '✅ IP 未变化，无需更新!\n';
+                    } else {
+                        result.textContent += '正在更新 DNS 记录...\n';
+                        
+                        await fetch(`https://api.cloudflare.com/client/v4/zones/${zId}/dns_records/${record.id}`, {
+                            method: 'PUT',
+                            headers: { 
+                                'Authorization': 'Bearer ' + token,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                type: 'A',
+                                name: 'molanjie',
+                                content: publicIP,
+                                proxied: false
+                            })
+                        });
+                        
+                        result.textContent += '✅ DNS 记录已更新!\n';
+                    }
+                } else {
+                    // 创建新记录
+                    result.textContent += '创建新的 DNS 记录...\n';
+                    
+                    await fetch(`https://api.cloudflare.com/client/v4/zones/${zId}/dns_records`, {
+                        method: 'POST',
+                        headers: { 
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            type: 'A',
+                            name: 'molanjie',
+                            content: publicIP,
+                            proxied: false
+                        })
+                    });
+                    
+                    result.textContent += '✅ DNS 记录已创建!\n';
+                }
+
+                result.textContent += '\n🎉 配置完成!\n';
+                result.textContent += '等待 1-5 分钟后即可通过 http://molanjie.dpdns.org 访问';
+
+            } catch (error) {
+                result.textContent += '\n❌ 错误: ' + error.message;
+            }
+
+            btn.disabled = false;
+            btn.textContent = '⚡ 配置 DNS';
+        }
+    </script>
+</body>
+</html>
