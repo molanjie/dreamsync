@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamSync - 梦境详情</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);min-height:100vh;color:white}
+        .star{position:fixed;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw var(--d,3s) ease-in-out infinite;opacity:0}
+        @keyframes tw{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:.7;transform:scale(1)}}
+        .glass{background:rgba(15,23,42,.65);backdrop-filter:blur(20px);border:1px solid rgba(99,102,241,.2);transition:all .35s}
+        .glass:hover{border-color:rgba(99,102,241,.35);box-shadow:0 15px 35px rgba(99,102,241,.1)}
+
+        @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .fade-up{animation:fadeUp .6s ease forwards}
+        .fade-up-d1{animation:fadeUp .6s .1s ease forwards;opacity:0}
+        .fade-up-d2{animation:fadeUp .6s .2s ease forwards;opacity:0}
+        .fade-up-d3{animation:fadeUp .6s .3s ease forwards;opacity:0}
+
+        @keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(99,102,241,.6)}70%{box-shadow:0 0 0 15px rgba(99,102,241,0)}100%{box-shadow:0 0 0 0 rgba(99,102,241,0)}}
+        .pulse-ring{animation:pulse-ring 2s infinite}
+
+        .tag-pill{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;transition:all .25s;cursor:pointer}
+        .tag-pill:hover{transform:scale(1.08)}
+
+        .emotion-bar{height:6px;border-radius:3px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+        .shimmer-text{background:linear-gradient(90deg,#818cf8 0%,#c084fc 25%,#f472b6 50%,#c084fc 75%,#818cf8 100%);background-size:200% 100%;animation:shimmer 3s linear infinite;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+        .dream-content{line-height:1.8;font-size:15px;color:#cbd5e1}
+        .dream-content p{margin-bottom:1em}
+        .dream-content strong{color:#818cf8}
+
+        ::-webkit-scrollbar{width:6px}
+        ::-webkit-scrollbar-track{background:rgba(15,23,42,.5)}
+        ::-webkit-scrollbar-thumb{background:linear-gradient(#6366f1,#8b5cf6);border-radius:3px}
+    </style>
+</head>
+<body>
+<div id="stars" class="pointer-events-none"></div>
+
+<!-- 顶部导航 -->
+<nav class="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/80 border-b border-slate-800/50">
+    <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <a href="app.html" class="text-slate-400 hover:text-white transition text-sm">← 返回</a>
+            <div class="w-px h-5 bg-slate-700"></div>
+            <span class="font-bold text-sm text-slate-300">梦境详情</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="editDream()" class="p-2 rounded-lg hover:bg-slate-800 transition text-slate-400 hover:text-white">✏️</button>
+            <button onclick="shareDream()" class="p-2 rounded-lg hover:bg-slate-800 transition text-slate-400 hover:text-white">🔗</button>
+            <button onclick="deleteDream()" class="p-2 rounded-lg hover:bg-red-500/20 transition text-slate-400 hover:text-red-400">🗑️</button>
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-4xl mx-auto px-4 py-6 pb-20">
+
+    <!-- 标题区 -->
+    <div class="mb-6 fade-up">
+        <div class="flex items-start justify-between gap-4 mb-3">
+            <h1 class="text-2xl md:text-3xl font-bold leading-tight" id="dreamTitle">在星空之城飞翔</h1>
+            <span class="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-400 border border-yellow-500/30 whitespace-nowrap" id="dreamType">
+                ⚡ 清醒梦
+            </span>
+        </div>
+        <div class="flex items-center gap-4 text-sm text-slate-400">
+            <span>📅 2026年3月30日</span>
+            <span>🕐 深夜 02:34</span>
+            <span id="clarityBadge">清晰度 <strong class="text-indigo-400">9/10</strong></span>
+        </div>
+    </div>
+
+    <!-- 主体内容 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 左侧：梦境内容 + AI分析 -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- 梦境内容 -->
+            <div class="glass rounded-3xl p-6 md:p-8 fade-up-d1">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-lg">📖</span>
+                    <h2 class="font-semibold">梦境内容</h2>
+                </div>
+                <div class="dream-content" id="dreamContent">
+                    <p>我在一座<strong>漂浮于云端的城市</strong>里飞翔，脚下是无边的云海，远处有一座发光的水晶塔。</p>
+                    <p>我感到无比自由，想飞多高就飞多高，风吹过脸颊，整个世界都在我脚下。云层在阳光下呈现出金色和粉色的渐变，美得无法形容。</p>
+                    <p>我飞向那座水晶塔，发现它是一座图书馆。每本书打开后，都会发出柔和的光芒。我拿起一本书，发现自己能<strong>完全控制梦境</strong>——这是清醒梦！</p>
+                    <p>我在图书馆里探索了很久，看到了许多奇异的符号和图画。最后，我从塔顶飞出，向着更远的天空飞去……</p>
+                </div>
+            </div>
+
+            <!-- AI 深度解读 -->
+            <div class="glass rounded-3xl p-6 md:p-8 fade-up-d2">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xl pulse-ring">🤖</div>
+                    <div>
+                        <h2 class="font-semibold">AI 深度解读</h2>
+                        <p class="text-xs text-slate-400">基于荣格心理学 · 符号学 · 情绪分析</p>
+                    </div>
+                    <a href="analysis.html" class="ml-auto text-xs text-indigo-400 hover:text-indigo-300 transition">详细报告 →</a>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/30">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span>🧠</span>
+                            <span class="font-medium text-indigo-300 text-sm">心理层面</span>
+                        </div>
+                        <p class="text-sm text-slate-300 leading-relaxed">飞翔象征着自我超越和精神升华。你在梦中感受到的无限自由，反映了你内心深处对突破现实限制的渴望。水晶图书馆代表知识和智慧的追求。</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/30">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span>💫</span>
+                            <span class="font-medium text-pink-300 text-sm">情绪层面</span>
+                        </div>
+                        <p class="text-sm text-slate-300 leading-relaxed">梦境中的愉悦感和自由感表明你目前处于一个相对积极的心理状态。云海和水晶塔的意象暗示你正在追求某种崇高的目标。</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/30">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span>🔮</span>
+                            <span class="font-medium text-emerald-300 text-sm">清醒梦信号</span>
+                        </div>
+                        <p class="text-sm text-slate-300 leading-relaxed">这是一个典型的清醒梦，清晰度高达9/10。你在梦中意识到自己可以控制梦境，这是清醒梦者的核心能力。建议保持现实检验的习惯，提高清醒梦频率。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 评论 -->
+            <div class="glass rounded-3xl p-6 fade-up-d3">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-semibold">💬 评论 <span class="text-slate-400 font-normal text-sm">(3)</span></h2>
+                </div>
+                <div class="space-y-4" id="commentsList">
+                    <div class="flex gap-3">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-lg flex-shrink-0">🌙</div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-medium text-sm">星空漫步者</span>
+                                <span class="text-xs text-slate-500">2小时前</span>
+                            </div>
+                            <p class="text-sm text-slate-300">太棒了！我也做过类似的飞翔梦，那种自由的感觉真的无法用语言形容 🕊️</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-lg flex-shrink-0">✨</div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-medium text-sm">梦境旅人</span>
+                                <span class="text-xs text-slate-500">5小时前</span>
+                            </div>
+                            <p class="text-sm text-slate-300">水晶图书馆这个意象太美了！我在清醒梦里也遇到过类似的场景</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-lg flex-shrink-0">🌿</div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-medium text-sm">清醒梦者</span>
+                                <span class="text-xs text-slate-500">昨天</span>
+                            </div>
+                            <p class="text-sm text-slate-300">清晰度9/10！你有经常做清醒梦吗？有什么技巧分享吗？</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 评论输入 -->
+                <div class="mt-5 pt-4 border-t border-slate-700/30">
+                    <div class="flex gap-3">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-lg flex-shrink-0">🦞</div>
+                        <div class="flex-1 flex gap-2">
+                            <input type="text" placeholder="写下你的评论..." class="flex-1 bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-indigo-500 transition">
+                            <button class="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 transition text-sm font-medium">发送</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：元信息 + 统计 -->
+        <div class="space-y-6">
+            <!-- 基本信息 -->
+            <div class="glass rounded-3xl p-5 fade-up-d1">
+                <h3 class="font-semibold mb-4 text-sm">📋 基本信息</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">梦境类型</span>
+                        <span class="text-yellow-400">⚡ 清醒梦</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">主要情绪</span>
+                        <span class="text-emerald-400">😊 愉悦</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">清晰度</span>
+                        <span class="text-indigo-400 font-medium">9 / 10</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">记录时间</span>
+                        <span>2026-03-30</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">梦境时长</span>
+                        <span>约 30 分钟</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 标签 -->
+            <div class="glass rounded-3xl p-5 fade-up-d2">
+                <h3 class="font-semibold mb-4 text-sm">🏷️ 梦境标签</h3>
+                <div class="flex flex-wrap gap-2">
+                    <span class="tag-pill bg-indigo-500/20 text-indigo-300">🕊️ 飞翔</span>
+                    <span class="tag-pill bg-purple-500/20 text-purple-300">☁️ 云海</span>
+                    <span class="tag-pill bg-pink-500/20 text-pink-300">💎 水晶塔</span>
+                    <span class="tag-pill bg-emerald-500/20 text-emerald-300">📚 图书馆</span>
+                    <span class="tag-pill bg-amber-500/20 text-amber-300">⚡ 清醒梦</span>
+                    <span class="tag-pill bg-cyan-500/20 text-cyan-300">🌤️ 天空</span>
+                </div>
+            </div>
+
+            <!-- 情绪分析 -->
+            <div class="glass rounded-3xl p-5 fade-up-d2">
+                <h3 class="font-semibold mb-4 text-sm">😊 情绪分析</h3>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">愉悦</span>
+                            <span class="text-emerald-400">75%</span>
+                        </div>
+                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="emotion-bar h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style="width:75%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">自由</span>
+                            <span class="text-indigo-400">85%</span>
+                        </div>
+                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="emotion-bar h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style="width:85%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">好奇</span>
+                            <span class="text-amber-400">60%</span>
+                        </div>
+                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="emotion-bar h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500" style="width:60%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">兴奋</span>
+                            <span class="text-pink-400">70%</span>
+                        </div>
+                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="emotion-bar h-full rounded-full bg-gradient-to-r from-pink-500 to-rose-500" style="width:70%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 符号卡片 -->
+            <div class="glass rounded-3xl p-5 fade-up-d3">
+                <h3 class="font-semibold mb-4 text-sm">🔮 核心符号</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3 rounded-xl bg-slate-800/50 text-center cursor-pointer hover:bg-indigo-500/15 transition">
+                        <div class="text-2xl mb-1">🕊️</div>
+                        <p class="text-xs text-slate-300">飞翔</p>
+                        <p class="text-xs text-slate-500 mt-0.5">自由意志</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-800/50 text-center cursor-pointer hover:bg-purple-500/15 transition">
+                        <div class="text-2xl mb-1">☁️</div>
+                        <p class="text-xs text-slate-300">云海</p>
+                        <p class="text-xs text-slate-500 mt-0.5">潜意识边界</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-800/50 text-center cursor-pointer hover:bg-pink-500/15 transition">
+                        <div class="text-2xl mb-1">💎</div>
+                        <p class="text-xs text-slate-300">水晶塔</p>
+                        <p class="text-xs text-slate-500 mt-0.5">精神灯塔</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-800/50 text-center cursor-pointer hover:bg-emerald-500/15 transition">
+                        <div class="text-2xl mb-1">📚</div>
+                        <p class="text-xs text-slate-300">图书馆</p>
+                        <p class="text-xs text-slate-500 mt-0.5">智慧追求</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 相似梦境 -->
+            <div class="glass rounded-3xl p-5 fade-up-d3">
+                <h3 class="font-semibold mb-4 text-sm">🔗 相似梦境</h3>
+                <div class="space-y-2">
+                    <a href="#" class="block p-3 rounded-xl bg-slate-800/40 hover:bg-slate-800/60 transition">
+                        <p class="text-sm font-medium">在彩虹瀑布中游泳</p>
+                        <p class="text-xs text-slate-400 mt-1">星空漫步者 · 92% 匹配</p>
+                    </a>
+                    <a href="#" class="block p-3 rounded-xl bg-slate-800/40 hover:bg-slate-800/60 transition">
+                        <p class="text-sm font-medium">飞越金色麦田</p>
+                        <p class="text-xs text-slate-400 mt-1">梦境旅人 · 87% 匹配</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 星空
+(function(){const c=document.getElementById('stars');for(let i=0;i<80;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*3}s`;c.appendChild(s)}})();
+
+function editDream(){alert('编辑功能开发中...')}
+function shareDream(){alert('分享链接已复制！')}
+function deleteDream(){if(confirm('确定要删除这个梦境吗？')){alert('已删除');location.href='app.html'}}
+</script>
+</body>
+</html>
