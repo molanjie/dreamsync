@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamSync - 梦境联网平台</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌙</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* 动态星空 */
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle var(--duration, 3s) ease-in-out infinite;
+            opacity: 0;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; }
+            50% { opacity: var(--opacity, 0.8); }
+        }
+
+        /* 渐变背景 */
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 玻璃卡片 */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            transition: all 0.4s ease;
+        }
+
+        .glass-card:hover {
+            background: rgba(15, 23, 42, 0.85);
+            border-color: rgba(99, 102, 241, 0.5);
+            transform: translateY(-10px);
+            box-shadow: 0 25px 50px rgba(99, 102, 241, 0.2);
+        }
+
+        /* 功能卡片渐变 */
+        .feature-gradient-1 { background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2)); }
+        .feature-gradient-2 { background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(244, 114, 182, 0.2)); }
+        .feature-gradient-3 { background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(20, 184, 166, 0.2)); }
+        .feature-gradient-4 { background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 146, 60, 0.2)); }
+        .feature-gradient-5 { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(96, 165, 250, 0.2)); }
+        .feature-gradient-6 { background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(167, 139, 250, 0.2)); }
+
+        /* 饼图 */
+        .pie-chart {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #6366f1 0deg 144deg,
+                #8b5cf6 144deg 234deg,
+                #ec4899 234deg 288deg,
+                #f59e0b 288deg 324deg,
+                #10b981 324deg 360deg
+            );
+            position: relative;
+        }
+
+        .pie-chart::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            background: #0f172a;
+            border-radius: 50%;
+        }
+
+        /* 统计数字动画 */
+        .count-up {
+            display: inline-block;
+            animation: countUp 2s ease forwards;
+        }
+
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 滚动视差 */
+        .parallax {
+            transition: transform 0.1s ease-out;
+        }
+
+        /* 脉冲动画 */
+        .pulse-ring {
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+
+        /* 淡入动画 */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fadeInUp {
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        /* 浮动动画 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 4px;
+        }
+
+        /* 导航栏 */
+        nav {
+            transition: all 0.3s ease;
+        }
+
+        nav.scrolled {
+            background: rgba(15, 23, 42, 0.95) !important;
+            backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body>
+    <!-- 星空背景 -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none" id="stars"></div>
+
+    <!-- 导航栏 -->
+    <nav class="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-transparent border-b border-transparent">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-xl animate-float">
+                        🌙
+                    </div>
+                    <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">DreamSync</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-slate-300 hover:text-indigo-400 transition">功能</a>
+                    <a href="#community" class="text-slate-300 hover:text-indigo-400 transition">社区</a>
+                    <a href="#stats" class="text-slate-300 hover:text-indigo-400 transition">统计</a>
+                    <a href="#rooms" class="text-slate-300 hover:text-indigo-400 transition">联机</a>
+                    <a href="install.html" class="text-emerald-400 hover:text-emerald-300 transition flex items-center gap-1">
+                        📱 安装APP
+                    </a>
+                </div>
+                <button onclick="window.location.href='login.html'" class="px-6 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition font-medium pulse-ring">
+                    登录 / 注册
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主页面 -->
+    <main class="pt-16">
+        <!-- Hero 区域 -->
+        <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
+            <div class="absolute inset-0 gradient-bg opacity-20"></div>
+            <div class="relative z-10 text-center px-4">
+                <h1 class="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 animate-fadeInUp">
+                    在梦境中相遇
+                </h1>
+                <p class="text-xl md:text-2xl text-slate-300 mb-4 max-w-2xl mx-auto animate-fadeInUp" style="animation-delay: 0.2s">
+                    记录你的梦境，发现梦境的秘密，与他人在梦中相遇
+                </p>
+                <p class="text-sm text-slate-400 mb-8 animate-fadeInUp" style="animation-delay: 0.3s">
+                    已有 <span class="text-indigo-400 font-semibold text-lg count-up">12,847</span> 名梦境探索者，共同记录了 <span class="text-purple-400 font-semibold text-lg count-up">89,234</span> 个梦境
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center animate-fadeInUp" style="animation-delay: 0.4s">
+                    <button onclick="window.location.href='login.html'" class="px-8 py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition font-semibold text-lg shadow-lg hover:shadow-indigo-500/25">
+                        立即开始
+                    </button>
+                    <button onclick="window.location.href='install.html'" class="px-8 py-4 rounded-xl border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 transition font-semibold text-lg flex items-center gap-2">
+                        📱 安装APP
+                    </button>
+                        了解更多
+                    </button>
+                </div>
+            </div>
+
+            <!-- 滚动提示 -->
+            <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+                <div class="w-6 h-10 rounded-full border-2 border-slate-400 flex items-start justify-center p-2">
+                    <div class="w-1 h-2 bg-slate-400 rounded-full animate-pulse"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 功能区域 -->
+        <section id="features" class="py-20 px-4 max-w-7xl mx-auto">
+            <h2 class="text-4xl font-bold text-center mb-4 animate-fadeInUp">核心功能</h2>
+            <p class="text-slate-400 text-center mb-16 max-w-2xl mx-auto">探索梦境的无限可能</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- 功能卡片 -->
+                <div class="glass-card p-8 rounded-2xl feature-gradient-1 animate-fadeInUp" style="animation-delay: 0.1s">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center mb-5 text-2xl">
+                        📝
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">梦境记录</h3>
+                    <p class="text-slate-400">
+                        用语音或文字快速记录你的梦境，标记梦境类型、清晰度和情绪
+                    </p>
+                </div>
+
+                <div class="glass-card p-8 rounded-2xl feature-gradient-2 animate-fadeInUp" style="animation-delay: 0.2s">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mb-5 text-2xl">
+                        🤖
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">AI 分析</h3>
+                    <p class="text-slate-400">
+                        AI 自动分析梦境主题、符号含义和情绪倾向，发现梦境模式
+                    </p>
+                </div>
+
+                <div class="glass-card p-8 rounded-2xl feature-gradient-3 animate-fadeInUp" style="animation-delay: 0.3s">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center mb-5 text-2xl">
+                        🔗
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">梦境共鸣</h3>
+                    <p class="text-slate-400">
+                        发现与你做相似梦的人，建立梦境连接，形成梦境社交图谱
+                    </p>
+                </div>
+
+                <div class="glass-card p-8 rounded-2xl feature-gradient-4 animate-fadeInUp" style="animation-delay: 0.4s">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mb-5 text-2xl">
+                        💬
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">梦境联机</h3>
+                    <p class="text-slate-400">
+                        创建或加入梦境房间，与他人实时交流梦境体验，同步入睡
+                    </p>
+                </div>
+
+                <div class="glass-card p-8 rounded-2xl feature-gradient-5 animate-fadeInUp" style="animation-delay: 0.5s">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-5 text-2xl">
+                        📊
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">数据统计</h3>
+                    <p class="text-slate-400">
+                        梦境日历、清晰度趋势、情绪分析，全面了解你的梦境模式
+                    </p>
+                </div>
+
+                <div class="glass-card p-8 rounded-2xl feature-gradient-6 animate-fadeInUp" style="animation-delay: 0.6s">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center mb-5 text-2xl">
+                        🌍
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">社区分享</h3>
+                    <p class="text-slate-400">
+                        匿名分享梦境，参与讨论，获得他人的解读和建议
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 统计区域 -->
+        <section id="stats" class="py-20 px-4 max-w-7xl mx-auto">
+            <h2 class="text-4xl font-bold text-center mb-4">梦境统计</h2>
+            <p class="text-slate-400 text-center mb-16">实时数据，洞察梦境世界</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <!-- 饼图 -->
+                <div class="flex flex-col items-center">
+                    <div class="pie-chart mb-6"></div>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-indigo-500"></div>
+                            <span class="text-slate-400">普通梦 40%</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-purple-500"></div>
+                            <span class="text-slate-400">清醒梦 25%</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-pink-500"></div>
+                            <span class="text-slate-400">噩梦 15%</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                            <span class="text-slate-400">重复梦 10%</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                            <span class="text-slate-400">预知梦 10%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计数字 -->
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="glass-card p-6 rounded-2xl text-center">
+                        <p class="text-4xl font-bold text-indigo-400 count-up">12,847</p>
+                        <p class="text-slate-400 text-sm mt-2">梦境探索者</p>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl text-center">
+                        <p class="text-4xl font-bold text-purple-400 count-up">89,234</p>
+                        <p class="text-slate-400 text-sm mt-2">梦境记录</p>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl text-center">
+                        <p class="text-4xl font-bold text-pink-400 count-up">3,456</p>
+                        <p class="text-slate-400 text-sm mt-2">梦境共鸣</p>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl text-center">
+                        <p class="text-4xl font-bold text-emerald-400 count-up">567</p>
+                        <p class="text-slate-400 text-sm mt-2">联机房间</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 今日热门梦境 -->
+        <section id="community" class="py-20 px-4 max-w-7xl mx-auto">
+            <h2 class="text-4xl font-bold text-center mb-4">今日热门梦境</h2>
+            <p class="text-slate-400 text-center mb-16">来自社区的真实分享</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="glass-card p-6 rounded-2xl animate-fadeInUp" style="animation-delay: 0.1s">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xl">
+                                🌙
+                            </div>
+                            <div>
+                                <p class="font-semibold">星空漫步者</p>
+                                <p class="text-xs text-slate-400">2小时前</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">🔥 热门</span>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">在彩虹瀑布中游泳</h3>
+                    <p class="text-slate-400 mb-4">
+                        我梦见自己站在一道巨大的彩虹瀑布前，水流是温暖的，每滴水珠都闪烁着不同的颜色...
+                    </p>
+                    <div class="flex items-center justify-between text-sm text-slate-500">
+                        <span>❤️ 128</span>
+                        <span>💬 23</span>
+                        <span>👥 8 共鸣</span>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl animate-fadeInUp" style="animation-delay: 0.2s">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-xl">
+                                ✨
+                            </div>
+                            <div>
+                                <p class="font-semibold">梦境旅人</p>
+                                <p class="text-xs text-slate-400">昨晚</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs bg-purple-500/20 text-purple-400">清醒梦</span>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">时间倒流的图书馆</h3>
+                    <p class="text-slate-400 mb-4">
+                        我发现了一座古老的图书馆，每本书打开后，我都能进入书中的世界...
+                    </p>
+                    <div class="flex items-center justify-between text-sm text-slate-500">
+                        <span>❤️ 89</span>
+                        <span>💬 15</span>
+                        <span>👥 5 共鸣</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-12">
+                <button onclick="window.location.href='login.html'" class="px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition font-semibold">
+                    查看更多梦境 →
+                </button>
+            </div>
+        </section>
+
+        <!-- 联机房间 -->
+        <section id="rooms" class="py-20 px-4 max-w-7xl mx-auto">
+            <h2 class="text-4xl font-bold text-center mb-4">梦境联机房间</h2>
+            <p class="text-slate-400 text-center mb-16">与他人同步入睡，共享梦境体验</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="glass-card p-6 rounded-2xl animate-fadeInUp" style="animation-delay: 0.1s">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center text-2xl">
+                            ⚡
+                        </div>
+                        <span class="px-2 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-400">🟢 进行中</span>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">清醒梦探索室</h3>
+                    <p class="text-sm text-slate-400 mb-4">
+                        一起练习清醒梦技巧，分享控梦经验
+                    </p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-500">👥 3/5 参与者</span>
+                        <button onclick="window.location.href='login.html'" class="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 transition font-medium">
+                            加入
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl animate-fadeInUp" style="animation-delay: 0.2s">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-2xl">
+                            🌿
+                        </div>
+                        <span class="px-2 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-400">🟢 进行中</span>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">噩梦疗愈空间</h3>
+                    <p class="text-sm text-slate-400 mb-4">
+                        安全的分享噩梦，互相支持和解读
+                    </p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-500">👥 2/4 参与者</span>
+                        <button onclick="window.location.href='login.html'" class="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 transition font-medium">
+                            加入
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl animate-fadeInUp" style="animation-delay: 0.3s">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-2xl">
+                            ⭐
+                        </div>
+                        <span class="px-2 py-1 rounded-full text-xs bg-slate-500/20 text-slate-400">🔒 私密</span>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">星空梦境同步</h3>
+                    <p class="text-sm text-slate-400 mb-4">
+                        今晚一起梦见星空，设置共同意图
+                    </p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-500">👥 4/6 参与者</span>
+                        <button class="px-4 py-2 rounded-lg bg-slate-700 text-slate-400 cursor-not-allowed">
+                            已满
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA 区域 -->
+        <section class="py-20 px-4 max-w-7xl mx-auto text-center">
+            <div class="glass-card p-12 rounded-3xl">
+                <h2 class="text-4xl font-bold mb-6">准备好进入梦境了吗？</h2>
+                <p class="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
+                    加入数千名梦境探险家，记录、分享、发现梦境的无限可能
+                </p>
+                <button onclick="window.location.href='login.html'" class="px-8 py-4 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:opacity-90 transition font-semibold text-lg shadow-lg">
+                    立即开始免费体验
+                </button>
+            </div>
+        </section>
+
+        <!-- 页脚 -->
+        <footer class="border-t border-slate-800/50 py-12 px-4">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                    <div>
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-xl">
+                                🌙
+                            </div>
+                            <span class="text-xl font-bold">DreamSync</span>
+                        </div>
+                        <p class="text-slate-400 text-sm">在梦境中相遇</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold mb-4 text-slate-200">关于</h3>
+                        <ul class="space-y-2 text-slate-400 text-sm">
+                            <li><a href="#" class="hover:text-indigo-400 transition">关于我们</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition">博客</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition">新闻</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold mb-4 text-slate-200">社区</h3>
+                        <ul class="space-y-2 text-slate-400 text-sm">
+                            <li><a href="#" class="hover:text-indigo-400 transition">论坛</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition">Discord</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition">Twitter</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold mb-4 text-slate-200">法律</h3>
+                        <ul class="space-y-2 text-slate-400 text-sm">
+                            <li><a href="#" class="hover:text-indigo-400 transition">隐私政策</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition">服务条款</a></li>
+                            <li><a href="#" class="hover:text-indigo-400 transition">联系我们</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="border-t border-slate-800/50 pt-8 text-center text-slate-400 text-sm">
+                    <p>© 2026 DreamSync. 在梦境中相遇。</p>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        // 生成星空
+        function generateStars() {
+            const container = document.getElementById('stars');
+            for (let i = 0; i < 150; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.setProperty('--duration', (2 + Math.random() * 4) + 's');
+                star.style.setProperty('--opacity', (0.3 + Math.random() * 0.7));
+                star.style.animationDelay = Math.random() * 3 + 's';
+                container.appendChild(star);
+            }
+        }
+
+        // 导航栏滚动效果
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // 视差效果
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            document.querySelectorAll('.parallax').forEach(el => {
+                el.style.transform = `translateY(${scrolled * 0.5}px)`;
+            });
+        });
+
+        // 注册 Service Worker (PWA)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').then(reg => {
+                console.log('✅ Service Worker registered');
+            }).catch(err => console.log('SW registration failed:', err));
+        }
+
+        // PWA 安装提示
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // 显示安装按钮（如果有的话）
+            const installBtn = document.getElementById('install-btn');
+            if (installBtn) installBtn.style.display = 'flex';
+        });
+
+        // 初始化
+        generateStars();
+    </script>
+</body>
+</html>
