@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamSync - 梦境分享</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);min-height:100vh;color:white;display:flex;align-items:center;justify-content:center;overflow:hidden}
+        
+        .star{position:fixed;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw var(--d,3s) ease-in-out infinite}
+        @keyframes tw{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:.7;transform:scale(1)}}
+        
+        .share-card{width:400px;background:linear-gradient(145deg,rgba(15,23,42,.9),rgba(30,27,75,.9));border:1px solid rgba(99,102,241,.3);border-radius:24px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.5)}
+        
+        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+        .shimmer{background:linear-gradient(90deg,transparent 0%,rgba(99,102,241,.08) 50%,transparent 100%);background-size:200% 100%;animation:shimmer 3s infinite}
+        
+        @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .fade-up{animation:fadeUp .6s ease forwards}
+        .fade-up-d1{animation:fadeUp .6s .1s ease forwards;opacity:0}
+        .fade-up-d2{animation:fadeUp .6s .2s ease forwards;opacity:0}
+        .fade-up-d3{animation:fadeUp .6s .3s ease forwards;opacity:0}
+
+        .btn{padding:10px 20px;border-radius:12px;font-weight:600;transition:all .3s;cursor:pointer;border:none;font-size:14px}
+        .btn:hover{transform:translateY(-2px)}
+    </style>
+</head>
+<body>
+<div id="stars"></div>
+
+<div class="share-card fade-up" id="card">
+    <!-- 顶部渐变 -->
+    <div class="relative h-32 overflow-hidden shimmer" id="card-header">
+        <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/40 via-purple-600/40 to-pink-600/40"></div>
+        <div class="absolute bottom-4 left-5 right-5 flex items-end justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-2xl border-2 border-slate-900" id="user-avatar">🌙</div>
+                <div>
+                    <p class="font-semibold" id="user-name">星空漫步者</p>
+                    <p class="text-xs text-slate-400">2026年3月30日</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 text-xs">
+                ⚡ 清醒梦
+            </div>
+        </div>
+    </div>
+
+    <!-- 内容 -->
+    <div class="p-5">
+        <h2 class="text-xl font-bold mb-2" id="dream-title">在星空之城飞翔</h2>
+        
+        <!-- 情绪标签 -->
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">😊 愉悦</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400">清晰度 9/10</span>
+        </div>
+
+        <p class="text-sm text-slate-300 leading-relaxed mb-4" id="dream-content">我在一座漂浮于云端的城市里飞翔，脚下是无边的云海，远处有一座发光的水晶塔。我感到无比自由，想飞多高就飞多高...</p>
+
+        <!-- 标签 -->
+        <div class="flex flex-wrap gap-1.5 mb-5">
+            <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">#飞翔</span>
+            <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">#云海</span>
+            <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">#水晶塔</span>
+            <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">#清醒梦</span>
+        </div>
+
+        <!-- 分享统计 -->
+        <div class="flex items-center justify-between py-3 border-t border-slate-700/50 text-sm">
+            <div class="flex items-center gap-4 text-slate-400">
+                <span>❤️ 128</span>
+                <span>💬 23</span>
+                <span>🔗 8 共鸣</span>
+            </div>
+            <div class="text-slate-500 text-xs flex items-center gap-1">
+                🌙 DreamSync
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 操作按钮 -->
+<div class="fixed bottom-8 left-0 right-0 flex justify-center gap-3 fade-up-d3">
+    <button onclick="copyCard()" class="btn bg-slate-800 text-white border border-slate-700">
+        📋 复制文本
+    </button>
+    <button onclick="downloadCard()" class="btn bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+        🖼️ 保存图片
+    </button>
+    <button onclick="shareLink()" class="btn bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+        🔗 分享链接
+    </button>
+</div>
+
+<script>
+(function(){const c=document.getElementById('stars');for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*3}s`;c.appendChild(s)}})();
+
+// 从 URL 参数读取梦境数据
+const params = new URLSearchParams(location.search);
+if(params.get('title')) document.getElementById('dream-title').textContent = params.get('title');
+if(params.get('content')) document.getElementById('dream-content').textContent = params.get('content');
+if(params.get('user')) document.getElementById('user-name').textContent = params.get('user');
+
+function copyCard(){
+    const text = `${document.getElementById('dream-title').textContent}\n\n${document.getElementById('dream-content').textContent}\n\n— ${document.getElementById('user-name').textContent} · DreamSync`;
+    navigator.clipboard.writeText(text).then(()=>alert('已复制到剪贴板'));
+}
+function downloadCard(){alert('截图保存功能：长按卡片 → 截图')}
+function shareLink(){alert('分享链接已复制！')}
+</script>
+</body>
+</html>
