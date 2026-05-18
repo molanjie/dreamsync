@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamSync - 睡前冥想</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(180deg,#0f172a 0%,#1a1035 50%,#0c1222 100%);min-height:100vh;color:white;overflow-x:hidden}
+        
+        /* 星空 */
+        .star{position:fixed;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw var(--d,3s) ease-in-out infinite}
+        @keyframes tw{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:.8;transform:scale(1)}}
+        
+        /* 呼吸动画 */
+        @keyframes breathe{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.15);opacity:1}}
+        .breathe{animation:breathe 6s ease-in-out infinite}
+        
+        /* 脉冲环 */
+        @keyframes pulse-ring{0%{transform:scale(.8);opacity:1}100%{transform:scale(1.8);opacity:0}}
+        .pulse-ring{animation:pulse-ring 3s ease-out infinite}
+        
+        /* 柔和闪烁 */
+        @keyframes glow{0%,100%{opacity:.3;filter:blur(1px)}50%{opacity:.6;filter:blur(2px)}}
+        .glow{animation:glow 4s ease-in-out infinite}
+        
+        /* 渐变文字 */
+        .grad-text{background:linear-gradient(135deg,#a5b4fc,#c084fc,#f0abfc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        
+        /* 进度条 */
+        .progress-bar{transition:width .5s ease}
+        
+        /* 圆点动画 */
+        @keyframes dotPulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.3);opacity:1}}
+        
+        /* 浮动 */
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        .float{animation:float 4s ease-in-out infinite}
+    </style>
+</head>
+<body>
+<div id="stars"></div>
+
+<!-- 导航 -->
+<nav class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4">
+    <a href="app.html" class="text-slate-400 hover:text-white transition text-sm">← 返回</a>
+    <span class="text-slate-500 text-sm" id="timer-display">00:00</span>
+</nav>
+
+<!-- 主内容 -->
+<div class="min-h-screen flex flex-col items-center justify-center px-6">
+    
+    <!-- 核心动画 -->
+    <div class="relative mb-12">
+        <!-- 多层脉冲环 -->
+        <div class="absolute inset-0 rounded-full pulse-ring border border-indigo-500/30"></div>
+        <div class="absolute inset-0 rounded-full pulse-ring border border-purple-500/20" style="animation-delay:1s"></div>
+        <div class="absolute inset-0 rounded-full pulse-ring border border-pink-500/10" style="animation-delay:2s"></div>
+        
+        <!-- 主圆球 -->
+        <div id="breath-circle" class="w-48 h-48 rounded-full bg-gradient-to-br from-indigo-500/30 via-purple-500/30 to-pink-500/30 backdrop-blur-xl flex items-center justify-center cursor-pointer breathe">
+            <div class="text-6xl" id="breath-emoji">🌙</div>
+        </div>
+    </div>
+    
+    <!-- 提示文字 -->
+    <div class="text-center mb-8">
+        <h1 class="text-2xl font-bold grad-text mb-2" id="phase-title">准备入睡</h1>
+        <p class="text-slate-400 text-sm" id="phase-desc">点击圆球开始冥想</p>
+    </div>
+    
+    <!-- 控制按钮 -->
+    <div class="flex items-center gap-6 mb-12">
+        <button onclick="toggleMeditation()" id="play-btn" class="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-2xl shadow-lg hover:scale-105 transition">
+            ▶
+        </button>
+    </div>
+    
+    <!-- 阶段指示 -->
+    <div class="flex items-center gap-2 mb-8">
+        <div id="phase-dot-1" class="w-3 h-3 rounded-full bg-indigo-400"></div>
+        <div id="phase-dot-2" class="w-2 h-2 rounded-full bg-slate-600"></div>
+        <div id="phase-dot-3" class="w-2 h-2 rounded-full bg-slate-600"></div>
+        <div id="phase-dot-4" class="w-2 h-2 rounded-full bg-slate-600"></div>
+    </div>
+    
+    <!-- 进度条 -->
+    <div class="w-full max-w-xs h-1 bg-slate-800 rounded-full overflow-hidden">
+        <div id="progress-fill" class="h-full w-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 progress-bar"></div>
+    </div>
+</div>
+
+<!-- 底部提示 -->
+<div class="fixed bottom-8 left-0 right-0 text-center">
+    <p class="text-xs text-slate-600">建议佩戴耳机以获得最佳体验</p>
+</div>
+
+<script>
+// 星空
+(function(){const c=document.getElementById('stars');for(let i=0;i<80;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*3}s`;c.appendChild(s)}})();
+
+// 冥想阶段
+const phases = [
+    {title:'放松身体',desc:'慢慢感受身体的每一个部位',emoji:'🧘',duration:120},
+    {title:'深呼吸',desc:'吸气...呼气...让节奏慢下来',emoji:'🌊',duration:180},
+    {title:'可视化',desc:'想象自己漂浮在宁静的星海中',emoji:'✨',duration:180},
+    {title:'入睡引导',desc:'让思绪慢慢飘远...',emoji:'💫',duration:300}
+];
+
+let isPlaying = false;
+let currentPhase = 0;
+let phaseStartTime = 0;
+let timerInterval = null;
+
+function toggleMeditation() {
+    if (isPlaying) {
+        pauseMeditation();
+    } else {
+        startMeditation();
+    }
+}
+
+function startMeditation() {
+    isPlaying = true;
+    currentPhase = 0;
+    phaseStartTime = Date.now();
+    
+    document.getElementById('play-btn').innerHTML = '⏸';
+    document.getElementById('breath-circle').classList.add('breathe');
+    
+    updatePhase();
+    startTimer();
+}
+
+function pauseMeditation() {
+    isPlaying = false;
+    document.getElementById('play-btn').innerHTML = '▶';
+    document.getElementById('breath-circle').classList.remove('breathe');
+    
+    if (timerInterval) clearInterval(timerInterval);
+}
+
+function updatePhase() {
+    const phase = phases[currentPhase];
+    document.getElementById('phase-title').textContent = phase.title;
+    document.getElementById('phase-desc').textContent = phase.desc;
+    document.getElementById('breath-emoji').textContent = phase.emoji;
+    
+    // 更新阶段指示器
+    for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById(`phase-dot-${i}`);
+        if (i - 1 <= currentPhase) {
+            dot.className = 'w-3 h-3 rounded-full bg-indigo-400 transition-all';
+        } else {
+            dot.className = 'w-2 h-2 rounded-full bg-slate-600 transition-all';
+        }
+    }
+}
+
+function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    
+    timerInterval = setInterval(() => {
+        if (!isPlaying) return;
+        
+        const elapsed = (Date.now() - phaseStartTime) / 1000;
+        const phase = phases[currentPhase];
+        
+        // 更新进度
+        const progress = Math.min((elapsed / phase.duration) * 100, 100);
+        document.getElementById('progress-fill').style.width = progress + '%';
+        
+        // 更新计时器
+        const totalSeconds = Math.floor(elapsed);
+        const mins = Math.floor(totalSeconds / 60).toString().padStart(2,'0');
+        const secs = (totalSeconds % 60).toString().padStart(2,'0');
+        document.getElementById('timer-display').textContent = `${mins}:${secs}`;
+        
+        // 阶段切换
+        if (elapsed >= phase.duration) {
+            currentPhase++;
+            if (currentPhase >= phases.length) {
+                // 冥想完成
+                completeMeditation();
+            } else {
+                phaseStartTime = Date.now();
+                updatePhase();
+            }
+        }
+    }, 1000);
+}
+
+function completeMeditation() {
+    pauseMeditation();
+    document.getElementById('phase-title').textContent = '晚安';
+    document.getElementById('phase-desc').textContent = '祝你有个美好的梦境';
+    document.getElementById('breath-emoji').textContent = '😴';
+    document.getElementById('progress-fill').style.width = '100%';
+    
+    // 保存记录
+    const records = JSON.parse(localStorage.getItem('dreamsync-meditation') || '[]');
+    records.unshift({
+        date: new Date().toISOString(),
+        duration: phases.reduce((a,p)=>a+p.duration,0)
+    });
+    localStorage.setItem('dreamsync-meditation', JSON.stringify(records.slice(0,30)));
+}
+
+// 点击圆球也可以开始/暂停
+document.getElementById('breath-circle').addEventListener('click', toggleMeditation);
+</script>
+</body>
+</html>
