@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamSync - 设置</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);min-height:100vh;color:white}
+        .star{position:fixed;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw var(--d,3s) ease-in-out infinite;opacity:0}
+        @keyframes tw{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:.7;transform:scale(1)}}
+        .glass{background:rgba(15,23,42,.65);backdrop-filter:blur(20px);border:1px solid rgba(99,102,241,.2);transition:all .3s}
+
+        @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .fade-up{animation:fadeUp .5s ease forwards}
+        .fade-up-d1{animation:fadeUp .5s .1s ease forwards;opacity:0}
+        .fade-up-d2{animation:fadeUp .5s .2s ease forwards;opacity:0}
+        .fade-up-d3{animation:fadeUp .5s .3s ease forwards;opacity:0}
+
+        .toggle-switch{position:relative;width:48px;height:26px;background:#334155;border-radius:13px;cursor:pointer;transition:background .3s}
+        .toggle-switch.active{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+        .toggle-switch::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:transform .3s}
+        .toggle-switch.active::after{transform:translateX(22px)}
+
+        ::-webkit-scrollbar{width:6px}
+        ::-webkit-scrollbar-track{background:rgba(15,23,42,.5)}
+        ::-webkit-scrollbar-thumb{background:linear-gradient(#6366f1,#8b5cf6);border-radius:3px}
+    </style>
+</head>
+<body>
+<div id="stars" class="pointer-events-none"></div>
+
+<!-- 导航 -->
+<nav class="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/80 border-b border-slate-800/50">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <a href="app.html" class="text-slate-400 hover:text-white transition text-sm">← 返回</a>
+            <div class="w-px h-5 bg-slate-700"></div>
+            <span class="font-bold text-base text-slate-300">⚙️ 设置</span>
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-2xl mx-auto px-4 py-6 pb-20 space-y-6">
+
+    <!-- 账户 -->
+    <div class="glass rounded-2xl p-5 fade-up">
+        <h2 class="font-semibold mb-4 text-sm text-slate-400 uppercase tracking-wider">账户</h2>
+        <div class="flex items-center gap-4 mb-4">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-3xl">🌙</div>
+            <div class="flex-1">
+                <input type="text" value="星空漫步者" class="w-full bg-transparent border-b border-slate-700 pb-1 font-semibold text-lg focus:outline-none focus:border-indigo-500 transition">
+                <input type="email" value="dreamer@dreamsync.io" class="w-full bg-transparent text-sm text-slate-400 focus:outline-none">
+            </div>
+        </div>
+        <button class="text-sm text-indigo-400 hover:text-indigo-300 transition">修改密码 →</button>
+    </div>
+
+    <!-- 通知 -->
+    <div class="glass rounded-2xl p-5 fade-up-d1">
+        <h2 class="font-semibold mb-4 text-sm text-slate-400 uppercase tracking-wider">通知</h2>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-medium">睡前提醒</p>
+                    <p class="text-xs text-slate-400 mt-0.5">每天提醒你记录梦境</p>
+                </div>
+                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-medium">提醒时间</p>
+                    <p class="text-xs text-slate-400 mt-0.5">选择合适的时间</p>
+                </div>
+                <input type="time" value="22:00" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+            </div>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-medium">共鸣通知</p>
+                    <p class="text-xs text-slate-400 mt-0.5">有人做了相似的梦时通知你</p>
+                </div>
+                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-medium">社区互动</p>
+                    <p class="text-xs text-slate-400 mt-0.5">评论、点赞等通知</p>
+                </div>
+                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 外观 -->
+    <div class="glass rounded-2xl p-5 fade-up-d2">
+        <h2 class="font-semibold mb-4 text-sm text-slate-400 uppercase tracking-wider">外观</h2>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-medium">深色模式</p>
+                    <p class="text-xs text-slate-400 mt-0.5">切换浅色/深色主题</p>
+                </div>
+                <div class="toggle-switch active" onclick="toggleTheme(this)"></div>
+            </div>
+            <div>
+                <p class="font-medium mb-3">主题色</p>
+                <div class="flex gap-3">
+                    <button class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900"></button>
+                    <button class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 hover:ring-2 hover:ring-pink-400 hover:ring-offset-2 hover:ring-offset-slate-900 transition-all"></button>
+                    <button class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 hover:ring-2 hover:ring-emerald-400 hover:ring-offset-2 hover:ring-offset-slate-900 transition-all"></button>
+                    <button class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 hover:ring-2 hover:ring-amber-400 hover:ring-offset-2 hover:ring-offset-slate-900 transition-all"></button>
+                    <button class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 hover:ring-2 hover:ring-cyan-400 hover:ring-offset-2 hover:ring-offset-slate-900 transition-all"></button>
+                </div>
+            </div>
+            <div>
+                <p class="font-medium mb-3">字体大小</p>
+                <div class="flex items-center gap-4">
+                    <span class="text-xs text-slate-400">A</span>
+                    <input type="range" min="12" max="18" value="14" class="flex-1 accent-indigo-500">
+                    <span class="text-lg text-slate-400">A</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐私 -->
+    <div class="glass rounded-2xl p-5 fade-up-d3">
+        <h2 class="font-semibold mb-4 text-sm text-slate-400 uppercase tracking-wider">隐私</h2>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-medium">公开梦境</p>
+                    <p class="text-xs text-slate-400 mt-0.5">允许其他用户查看你的梦境</p>
+                </div>
+                <div class="toggle-switch" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-medium">匿名分享</p>
+                    <p class="text-xs text-slate-400 mt-0.5">在社区匿名展示你的梦境</p>
+                </div>
+                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-medium">数据加密</p>
+                    <p class="text-xs text-slate-400 mt-0.5">端到端加密你的梦境数据</p>
+                </div>
+                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据 -->
+    <div class="glass rounded-2xl p-5 fade-up-d3">
+        <h2 class="font-semibold mb-4 text-sm text-slate-400 uppercase tracking-wider">数据</h2>
+        <div class="space-y-3">
+            <button class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800/70 transition">
+                <div class="flex items-center gap-3">
+                    <span class="text-lg">📤</span>
+                    <span>导出梦境数据</span>
+                </div>
+                <span class="text-slate-400">→</span>
+            </button>
+            <button class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800/70 transition">
+                <div class="flex items-center gap-3">
+                    <span class="text-lg">📥</span>
+                    <span>导入梦境数据</span>
+                </div>
+                <span class="text-slate-400">→</span>
+            </button>
+            <button class="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800/70 transition">
+                <div class="flex items-center gap-3">
+                    <span class="text-lg">🗑️</span>
+                    <span>清除缓存</span>
+                </div>
+                <span class="text-slate-400">→</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 关于 -->
+    <div class="glass rounded-2xl p-5 fade-up-d3">
+        <h2 class="font-semibold mb-4 text-sm text-slate-400 uppercase tracking-wider">关于</h2>
+        <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+                <span class="text-slate-400">版本</span>
+                <span>2.0.0</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-400">构建</span>
+                <span>2026.03.31</span>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-3 mt-4 text-xs">
+            <a href="#" class="text-indigo-400 hover:text-indigo-300 transition">隐私政策</a>
+            <a href="#" class="text-indigo-400 hover:text-indigo-300 transition">服务条款</a>
+            <a href="#" class="text-indigo-400 hover:text-indigo-300 transition">帮助中心</a>
+            <a href="#" class="text-indigo-400 hover:text-indigo-300 transition">反馈建议</a>
+        </div>
+    </div>
+
+    <!-- 退出 -->
+    <button onclick="logout()" class="w-full py-4 rounded-2xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition font-semibold">
+        🚪 退出登录
+    </button>
+
+    <p class="text-center text-xs text-slate-500">
+        DreamSync © 2026 · 在梦境中相遇
+    </p>
+</div>
+
+<script>
+// 星空
+(function(){const c=document.getElementById('stars');for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*3}s`;c.appendChild(s)}})();
+
+function toggleTheme(el){el.classList.toggle('active');document.body.classList.toggle('light')}
+function logout(){if(confirm('确定要退出登录吗？')){localStorage.clear();location.href='login.html'}}
+</script>
+</body>
+</html>
